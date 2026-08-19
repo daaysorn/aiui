@@ -58,6 +58,25 @@ export type UserOverview = {
   }
 }
 
+export type BillingPlan = {
+  slug: string
+  name: string
+  description: string | null
+  audience: string
+  billingType: string
+  currency: string
+  priceCents: number
+  seatPriceCents: number
+  minSeats: number
+  includedCredits: number
+  maxOrganizations: number
+  extraUsageEnabled: boolean
+  extraUsagePriceCents: number
+  features: string[]
+  trialDays: number | null
+  sortOrder: number
+}
+
 export type Project = {
   id: string
   workspaceId: string

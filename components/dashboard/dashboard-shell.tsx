@@ -12,11 +12,9 @@ import {
   SquaresFourIcon,
   SunIcon,
 } from "@phosphor-icons/react"
-import { toast } from "sonner"
-
-import { upgradeToProAction } from "@/app/(dashboard)/dashboard/actions"
 
 import { AuthBrand } from "@/components/auth/auth-brand"
+import { PlansDialog } from "@/components/dashboard/plans-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -90,29 +88,12 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [upgrading, setUpgrading] = useState(false)
+  const [plansOpen, setPlansOpen] = useState(false)
 
   async function handleSignOut() {
     await clearSession()
     router.push("/sign-in")
     router.refresh()
-  }
-
-  async function handleUpgrade() {
-    setUpgrading(true)
-    try {
-      const result = await upgradeToProAction()
-      if (result.error) {
-        toast.error(result.error)
-        return
-      }
-      if (result.ok) {
-        toast.success("You're on Pro.")
-        router.refresh()
-      }
-    } finally {
-      setUpgrading(false)
-    }
   }
 
   const nameParts = userName.trim().split(/\s+/).filter(Boolean)
@@ -181,8 +162,7 @@ export function DashboardShell({
                 variant="ghost"
                 size="xs"
                 className="shrink-0 rounded-full px-3 text-foreground outline-solid outline-1 outline-border hover:bg-transparent hover:text-foreground active:translate-y-0"
-                loading={upgrading}
-                onClick={() => void handleUpgrade()}
+                onClick={() => setPlansOpen(true)}
               >
                 Upgrade
               </Button>
@@ -197,6 +177,9 @@ export function DashboardShell({
         </header>
         <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </SidebarInset>
+      {showUpgrade ? (
+        <PlansDialog open={plansOpen} onOpenChange={setPlansOpen} />
+      ) : null}
     </SidebarProvider>
   )
 }

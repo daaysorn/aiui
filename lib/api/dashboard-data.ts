@@ -1,7 +1,8 @@
 "use server"
 
+import { apiRequestOrThrow } from "@/lib/api/fetch"
 import { serverApiRequest } from "@/lib/api/server-fetch"
-import type { Project, ProjectDetail, UserOverview } from "@/lib/api/types"
+import type { BillingPlan, Project, ProjectDetail, UserOverview } from "@/lib/api/types"
 import { getUserOverview } from "@/lib/session"
 
 export async function fetchUserOverview(): Promise<UserOverview> {
@@ -23,4 +24,11 @@ export async function fetchProject(id: string): Promise<ProjectDetail | null> {
   } catch {
     return null
   }
+}
+
+export async function fetchBillingPlans(): Promise<BillingPlan[]> {
+  const result = await apiRequestOrThrow<{ plans: BillingPlan[] }>(
+    "/v1/billing/plans"
+  )
+  return result.plans ?? []
 }

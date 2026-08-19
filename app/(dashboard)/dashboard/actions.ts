@@ -12,13 +12,26 @@ export type UpgradeState = {
   ok?: boolean
 }
 
-export async function upgradeToProAction(): Promise<UpgradeState> {
+export async function attachBillingPlanAction(input: {
+  planId: string
+  organizationId?: string
+  seats?: number
+}): Promise<UpgradeState> {
+  const planId = input.planId.trim()
+  if (!planId) {
+    return { error: "Pick a plan to continue." }
+  }
+
   let paymentUrl: string | null = null
 
   try {
     const result = await serverApiRequest<unknown>("/v1/billing/attach", {
       method: "POST",
-      json: { planId: "pro" },
+      json: {
+        planId,
+        ...(input.organizationId ? { organizationId: input.organizationId } : {}),
+        ...(input.seats ? { seats: input.seats } : {}),
+      },
     })
     paymentUrl = billingPaymentUrl(result)
   } catch (error) {

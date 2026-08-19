@@ -17,7 +17,7 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
 import { ChatEmoji, type ChatEmojiMood } from "@/components/brand/chat-emoji"
-import { BrandEmojiCycle } from "@/components/brand/emoji-cycle"
+import { GreetingEmoji, greetingPeriod } from "@/components/brand/emoji-cycle"
 import {
   ChatComposer,
   FileCard,
@@ -65,9 +65,9 @@ function formatTime(date: Date) {
 }
 
 function greet(name: string) {
-  const h = new Date().getHours()
-  if (h < 12) return `Morning, ${name}`
-  if (h < 17) return `Afternoon, ${name}`
+  const period = greetingPeriod()
+  if (period === "morning") return `Morning, ${name}`
+  if (period === "afternoon") return `Afternoon, ${name}`
   return `Evening, ${name}`
 }
 
@@ -226,8 +226,10 @@ export function OverviewView({
           /* Empty state — greeting + input centered together */
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
             <h1 className="inline-flex max-w-full flex-row items-center justify-center gap-2.5 font-heading text-3xl font-semibold tracking-tight xs:text-4xl">
-              <BrandEmojiCycle className="size-10 xs:size-12" />
-              <span className="min-w-0">{greet(firstName)}</span>
+              <GreetingEmoji className="size-10 xs:size-12" />
+              <span className="min-w-0" suppressHydrationWarning>
+                {greet(firstName)}
+              </span>
             </h1>
             <div className="w-full">
               <ChatComposer

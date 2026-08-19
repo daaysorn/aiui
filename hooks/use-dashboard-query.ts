@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import {
+  fetchBillingPlans,
   fetchProject,
   fetchProjects,
   fetchUserOverview,
@@ -28,5 +29,13 @@ export function useProject(id: string) {
     queryKey: queryKeys.project(id),
     queryFn: () => fetchProject(id),
     enabled: Boolean(id),
+  })
+}
+
+export function useBillingPlans(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.billingPlans,
+    queryFn: fetchBillingPlans,
+    enabled,
   })
 }

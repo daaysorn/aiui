@@ -11,6 +11,21 @@ const EMOJI_SOURCES = [
   "/lottie/face-in-clouds.json",
 ] as const
 
+const GREETING_EMOJI_SOURCES = {
+  morning: "/lottie/greeting-morning.json",
+  afternoon: "/lottie/greeting-afternoon.json",
+  evening: "/lottie/greeting-evening.json",
+} as const
+
+export type GreetingPeriod = keyof typeof GREETING_EMOJI_SOURCES
+
+export function greetingPeriod(now = new Date()): GreetingPeriod {
+  const hour = now.getHours()
+  if (hour < 12) return "morning"
+  if (hour < 17) return "afternoon"
+  return "evening"
+}
+
 const HOLD_MS = 700
 const FADE_MS = 550
 
@@ -20,6 +35,7 @@ type EmojiLayer = {
 }
 
 function BrandEmojiCycle({ className }: { className?: string }) {
+  const [mounted, setMounted] = useState(false)
   const [stack, setStack] = useState<EmojiLayer[]>([{ key: 0, index: 0 }])
   const [activeKey, setActiveKey] = useState(0)
   const [reduceMotion, setReduceMotion] = useState(false)
@@ -29,6 +45,10 @@ function BrandEmojiCycle({ className }: { className?: string }) {
   const nextKeyRef = useRef(1)
 
   activeKeyRef.current = activeKey
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -82,17 +102,21 @@ function BrandEmojiCycle({ className }: { className?: string }) {
       )}
       aria-hidden
     >
-      {stack.map((layer) => (
-        <EmojiLayer
-          key={layer.key}
-          src={EMOJI_SOURCES[layer.index]}
-          active={layer.key === activeKey}
-          autoplay={!reduceMotion}
-          onComplete={
-            !reduceMotion && layer.key === activeKey ? handleComplete : undefined
-          }
-        />
-      ))}
+      {mounted
+        ? stack.map((layer) => (
+            <EmojiLayer
+              key={layer.key}
+              src={EMOJI_SOURCES[layer.index]}
+              active={layer.key === activeKey}
+              autoplay={!reduceMotion}
+              onComplete={
+                !reduceMotion && layer.key === activeKey
+                  ? handleComplete
+                  : undefined
+              }
+            />
+          ))
+        : null}
     </span>
   )
 }
@@ -136,4 +160,41 @@ function EmojiLayer({
   )
 }
 
-export { BrandEmojiCycle }
+function GreetingEmoji({ className }: { className?: string }) {
+  const [period, setPeriod] = useState<GreetingPeriod | null>(null)
+  const [reduceMotion, setReduceMotion] = useState(false)
+
+  useEffect(() => {
+    setPeriod(greetingPeriod())
+  }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const sync = () => setReduceMotion(media.matches)
+    sync()
+    media.addEventListener("change", sync)
+    return () => media.removeEventListener("change", sync)
+  }, [])
+
+  return (
+    <span
+      className={cn(
+        "relative size-7 shrink-0 overflow-hidden contain-[size]",
+        className
+      )}
+      aria-hidden
+    >
+      {period ? (
+        <Lottie
+          as="span"
+          src={GREETING_EMOJI_SOURCES[period]}
+          autoplay={!reduceMotion}
+          loop={!reduceMotion}
+          className="absolute inset-0 block size-full min-h-0 min-w-0 [&_svg]:block [&_svg]:size-full"
+        />
+      ) : null}
+    </span>
+  )
+}
+
+export { BrandEmojiCycle, GreetingEmoji }
