@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
+import { setOtpResendCooldown } from "@/lib/auth/otp-resend-cooldown"
 import { authCopy, siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
@@ -66,6 +67,7 @@ function SignUpForm() {
       }
 
       toast.success("Account created. Verify your email.")
+      setOtpResendCooldown(parsed.data.email)
       router.push(
         `${siteRoutes.verifyEmail}?email=${encodeURIComponent(parsed.data.email)}`
       )
@@ -177,8 +179,8 @@ function SignUpForm() {
           ) : null}
         </div>
 
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Creating account..." : "Create account"}
+        <Button type="submit" className="w-full" loading={pending}>
+          Create account
         </Button>
       </form>
     </div>

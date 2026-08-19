@@ -83,9 +83,11 @@ components/
     footer.tsx         ← copyright, now-playing, social dock
     index.ts
   ui/
-    button.tsx         ← CVA button system
+    button.tsx         ← CVA button system (`loading` shows Spinner)
+    spinner.tsx        ← loading indicator
+    sonner.tsx         ← toasts (no close X)
     input.tsx          ← text field (border focus only, no ring)
-    input-otp.tsx      ← OTP slots (border-ring when active, no ring)
+    input-otp.tsx      ← OTP slots (`gap-2`, border-ring when active, no ring)
     tooltip.tsx        ← Radix tooltip
     dock.tsx           ← Magic UI–style magnifying dock
 views/
@@ -803,6 +805,7 @@ Use ghost for secondary actions in dense chrome (toolbars, dialogs, icon rows). 
 | Kind             | Classes / utility                                    | Timing                          | Use                                             |
 | ---------------- | ---------------------------------------------------- | ------------------------------- | ----------------------------------------------- |
 | **Skeleton bar** | `animate-pulse rounded bg-muted` (+ fixed `h-* w-*`) | Tailwind default pulse          | Loading placeholders (e.g. now-playing fetch)   |
+| **Button spinner** | `<Button loading>` → `Spinner` (`motion-safe:animate-spin`) | CSS spin; calm if reduced motion | Pending submit / async actions                  |
 | **Pulse (live)** | `motion-safe:animate-pulse` or `animate-music-pulse` | music-pulse: **1.8s** ease      | Playing indicator / logo while track is live    |
 | **Text shimmer** | `motion-safe:animate-text-shimmer`                   | **5.5s** `ease-in-out` infinite | Sweeping glint on muted live text (artist name) |
 
@@ -1007,6 +1010,16 @@ Built with CVA + Radix `Slot` (`asChild`). Data attributes: `data-slot="button"`
 [xs] [sm] [default] [lg]     [■] icon-xs  [■] icon-sm  [■] icon  [■] icon-lg
 ```
 
+#### Loading
+
+Pending actions use `<Button loading>`. The control shows a `Spinner`, sets `aria-busy`, and disables itself. **Keep the action label.** Do not swap the label to "Saving..." / "Creating..." as the only feedback.
+
+```tsx
+<Button type="submit" loading={pending}>
+  Save changes
+</Button>
+```
+
 #### Usage
 
 ```tsx
@@ -1014,11 +1027,10 @@ import { Button } from "@/components/ui/button"
 
 <Button>Button</Button>
 <Button variant="outline" size="sm">Save</Button>
+<Button loading>Save</Button>
 <Button variant="destructive">Delete</Button>
 <Button size="icon" aria-label="Settings">{/* icon */}</Button>
-<Button asChild>
-  <Link href="/about">About</Link>
-</Button>
+<Button render={<Link href="/about" />}>About</Button>
 ```
 
 ---
@@ -1121,7 +1133,17 @@ destination.
 
 ### 10.7 Input — `components/ui/input.tsx`
 
-Text fields use `border-input` at rest and `focus-visible:border-ring` when focused. **No `ring-*`.** Invalid state is `aria-invalid:border-destructive` only. OTP slots (`input-otp.tsx`) follow the same rule: active slot is `border-ring`, never `ring-3`. See [Form focus (rule)](#form-focus-rule).
+Text fields use `border-input` at rest and `focus-visible:border-ring` when focused. **No `ring-*`.** Invalid state is `aria-invalid:border-destructive` only. OTP slots (`input-otp.tsx`) follow the same rule: active slot is `border-ring`, never `ring-3`. Slots are separate boxes with `gap-2`. See [Form focus (rule)](#form-focus-rule).
+
+---
+
+### 10.8 Spinner — `components/ui/spinner.tsx`
+
+Lucide `Loader2` with `motion-safe:animate-spin`. Prefer it through `<Button loading>` rather than placing it by hand.
+
+### 10.9 Toaster — `components/ui/sonner.tsx`
+
+Sonner toasts have **no close (X) button**. Do not pass `closeButton`. Dismiss by timeout or swipe. `app/globals.css` hides `[data-close-button]`.
 
 ---
 
@@ -1442,6 +1464,9 @@ consistent across body links, cards, navigation, previews, and social links.
 | Performance UI | Added performance as a design principle; §8.1 CSS-only page reveals; §8.8 server/client boundaries, lightweight OG previews, settled skeleton behavior and reduced-motion rules                                                                                                                                                      |
 | Page OG        | §8.9 — PageLightSwiss via `createPageOgImage`; **description must stay one line** (≤72 chars, template `nowrap`); `localOpenGraphImageSrc` for automatic previews                                                                                                                                                                     |
 | Input focus    | Inputs, textareas, selects, and OTP slots have no `ring-*`. Focus uses `border-ring` only. Buttons keep rings. Locked in `app/globals.css`.                                                                                                                                                                                          |
+| Button loading | `<Button loading>` shows a spinner and keeps the action label. Do not use "Saving..." as the only feedback.                                                                                                                                                                                                                          |
+| Toast close    | Sonner has no X / `closeButton`. Locked in `app/globals.css`.                                                                                                                                                                                                                                                                        |
+| OTP gap        | OTP slots are separate boxes with `gap-2`.                                                                                                                                                                                                                                                                                           |
 
 ---
 

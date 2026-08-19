@@ -68,8 +68,8 @@ export function SettingsView({ user }: { user: SessionUser }) {
             defaultValue={user.telephone ?? ""}
           />
         </div>
-        <Button type="submit" disabled={pending}>
-          {pending ? "Saving..." : "Save changes"}
+        <Button type="submit" loading={pending}>
+          Save changes
         </Button>
       </form>
     </DashboardSection>

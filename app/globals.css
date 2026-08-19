@@ -281,3 +281,8 @@
 ) {
   --tw-ring-shadow: 0 0 #0000 !important;
 }
+
+/* Toasts never show a close (X) control. */
+[data-sonner-toast] [data-close-button] {
+  display: none !important;
+}

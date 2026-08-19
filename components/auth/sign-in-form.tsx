@@ -292,8 +292,13 @@ function SignInForm() {
           ) : null}
         </div>
 
-        <Button type="submit" className="w-full" disabled={pendingAction !== null}>
-          {pendingAction === "email" ? "Signing in..." : "Sign in"}
+        <Button
+          type="submit"
+          className="w-full"
+          loading={pendingAction === "email"}
+          disabled={pendingAction !== null && pendingAction !== "email"}
+        >
+          Sign in
         </Button>
       </form>
     </div>

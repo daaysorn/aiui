@@ -21,3 +21,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Static/content page OG images use PageLightSwiss via `createPageOgImage` (`lib/og-page.ts`). New routes should add `opengraph-image.tsx` and resolve preview URLs with `lib/og-path` / `localOpenGraphImageSrc`.
 - App Router page files stay thin. Compose page bodies in `views/`.
 - Inputs never use focus rings; focus is border only (`focus-visible:border-ring`). Buttons keep `ring-ring`.
+- Loading buttons use `<Button loading>` (spinner + original label). Sonner toasts have no close (X) button.

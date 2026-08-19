@@ -99,7 +99,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           {children}
-          <Toaster richColors closeButton />
+          <Toaster richColors />
         </ThemeProvider>
       </body>
     </html>

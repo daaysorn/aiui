@@ -31,11 +31,12 @@ function SocialAuthButton({
         variant="outline"
         size="lg"
         className={cn("w-full justify-center gap-2", className)}
-        disabled={disabled || loading}
+        loading={loading}
+        disabled={disabled}
         onClick={onClick}
       >
-        {loading ? "Redirecting..." : icon}
-        {!loading ? label : null}
+        {loading ? null : icon}
+        {label}
       </Button>
     </div>
   )

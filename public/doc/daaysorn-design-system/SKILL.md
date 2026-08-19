@@ -44,6 +44,8 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 24. **Page OG images** (via `createPageOgImage` / `renderPageOgImage` → PageLightSwiss) must keep the supporting **description on one line** — never wrap. Write short copy (roughly ≤72 characters). The template enforces `white-space: nowrap`. See `public/doc/designSystem.md` §8.9.
 25. Never use em dashes (`—`) in user-facing content. Rewrite the sentence with a period, comma, colon, or parentheses instead. This rule applies to headings, body copy, labels, descriptions, metadata, and generated editorial content.
 26. Inputs, textareas, selects, and OTP slots **never use focus rings**. Use `focus-visible:border-ring` only. Never add `focus-visible:ring-*`, `ring-3`, or `aria-invalid:ring-*` to those surfaces. Buttons keep `focus-visible:ring-3 ring-ring/50`. Runtime lock: `app/globals.css` zeros `--tw-ring-shadow` on input surfaces.
+27. Loading actions use `<Button loading>`. The button shows a `Spinner`, sets `aria-busy`, and disables itself. Keep the action label. Do not replace the label with "Saving..." / "Creating..." as the only loading feedback.
+28. Sonner toasts have **no close (X) button**. Never pass `closeButton`. Toasts dismiss by timeout or swipe. Runtime lock: `app/globals.css` hides `[data-close-button]`.
 
 ## Form focus
 
@@ -68,6 +70,7 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 | Borders / inputs      | `border-border` / `border-input`                        |
 | Input focus           | `focus-visible:border-ring` only (never `ring-*`)       |
 | Button focus ring     | `ring-ring` (already on Button)                         |
+| Loading button        | `<Button loading>` (spinner + keep the label)           |
 | Danger                | `variant="destructive"` / `text-destructive`            |
 | Success               | `text-success` / `bg-success`                           |
 | Actionable link       | `cursor-pointer` (also enforced globally for `a[href]`) |
@@ -98,7 +101,8 @@ Full rationale (why not Tailwind naming, device table): `public/doc/designSystem
 ```tsx
 import { Button } from "@/components/ui/button"
 <Button variant="default|outline|secondary|ghost|destructive|link" size="default|xs|sm|lg|icon|icon-xs|icon-sm|icon-lg" />
-<Button asChild><Link href="/x">Go</Link></Button>
+<Button loading>Save</Button>
+<Button render={<Link href="/x" />}>Go</Button>
 
 import { Input } from "@/components/ui/input"
 <Input /> // focus: border-ring only, never ring-*
@@ -126,6 +130,8 @@ After writing UI:
 - [ ] No hard-coded hex/oklch/px colors
 - [ ] Classes merged with cn(); conditional classes clean
 - [ ] Inputs have no focus ring (`border-ring` only); buttons keep `ring-ring`
+- [ ] Loading actions use `<Button loading>` (spinner + original label, not "Saving..." alone)
+- [ ] Toasts have no close (X) button
 - [ ] Focus visible on buttons + aria-labels on icon-only controls
 - [ ] Every actionable link uses the pointer cursor
 - [ ] Renders in light AND dark (semantic tokens only)
@@ -157,6 +163,7 @@ Same system, swap **token values only** (keep token names + component APIs). `ap
 | Theming (light/dark)                    | §9                                 |
 | Component variants/APIs                 | §10                                |
 | Form focus / input rings                | Form focus (rule) + §12            |
+| Loading buttons / toasts                | §10.1 Button loading + §10.8       |
 | Accessibility                           | §12                                |
 | Recipes                                 | §13 (incl. §13.6 long-string wrap) |
 | Add token/font/component                | §14                                |

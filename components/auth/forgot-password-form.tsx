@@ -141,8 +141,8 @@ function ForgotPasswordForm() {
             required
             minLength={8}
           />
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Saving..." : "Update password"}
+          <Button type="submit" className="w-full" loading={pending}>
+            Update password
           </Button>
         </form>
       ) : step === "email" ? (
@@ -155,8 +155,8 @@ function ForgotPasswordForm() {
             required
           />
           <TurnstileField onChange={setCaptchaToken} />
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Sending..." : "Send reset code"}
+          <Button type="submit" className="w-full" loading={pending}>
+            Send reset code
           </Button>
         </form>
       ) : (
@@ -176,8 +176,8 @@ function ForgotPasswordForm() {
             required
             minLength={8}
           />
-          <Button type="submit" className="w-full" disabled={pending || otp.length !== 6}>
-            {pending ? "Saving..." : "Update password"}
+          <Button type="submit" className="w-full" loading={pending} disabled={otp.length !== 6}>
+            Update password
           </Button>
         </form>
       )}

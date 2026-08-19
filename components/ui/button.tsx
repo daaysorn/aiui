@@ -1,6 +1,7 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
+import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -46,8 +47,14 @@ function Button({
   size = "default",
   nativeButton,
   render,
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    loading?: boolean
+  }) {
   return (
     <ButtonPrimitive
       data-slot="button"
@@ -55,7 +62,12 @@ function Button({
       nativeButton={nativeButton ?? render == null}
       render={render}
       {...props}
-    />
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+    >
+      {loading ? <Spinner data-icon="inline-start" aria-hidden /> : null}
+      {children}
+    </ButtonPrimitive>
   )
 }
 

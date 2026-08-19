@@ -1,8 +1,8 @@
 export const authCopy = {
   termsPrefix: "By continuing, you agree to our",
-  termsLabel: "Terms",
+  termsLabel: "terms",
   termsAnd: "and",
-  privacyLabel: "Privacy Policy",
+  privacyLabel: "privacy",
   termsSuffix: ".",
   placeholders: {
     identifier: "you@example.com or username",

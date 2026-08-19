@@ -54,8 +54,8 @@ function OnboardingForm() {
           required
         />
       </div>
-      <Button type="submit" disabled={pending}>
-        {pending ? "Saving..." : "Continue to dashboard"}
+      <Button type="submit" loading={pending}>
+        Continue to dashboard
       </Button>
     </form>
   )

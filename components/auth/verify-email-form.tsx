@@ -10,15 +10,20 @@ import { toast } from "sonner"
 import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Spinner } from "@/components/ui/spinner"
 import { authClient, persistSession } from "@/lib/api/client"
 import { sendVerificationOtp, verifyEmailOtp } from "@/lib/api/auth"
+import {
+  clearOtpResendCooldown,
+  getOtpResendAvailableAt,
+  setOtpResendCooldown,
+} from "@/lib/auth/otp-resend-cooldown"
 import { getSafeNextPath, siteRoutes } from "@/lib/site"
 
 import { TurnstileField } from "./turnstile-field"
 
-const OTP_RESEND_COOLDOWN_MS = 60_000
 const OTP_SLOT_CLASS =
-  "size-auto min-w-0 flex-1 aspect-square rounded-lg border text-lg first:rounded-lg first:border-l last:rounded-lg"
+  "size-auto min-w-0 flex-1 aspect-square rounded-lg border text-lg"
 
 function VerifyEmailForm() {
   const router = useRouter()
@@ -29,9 +34,7 @@ function VerifyEmailForm() {
   const [pendingAction, setPendingAction] = useState<"verify" | "resend" | null>(
     null
   )
-  const [resendAvailableAt, setResendAvailableAt] = useState(
-    () => Date.now() + OTP_RESEND_COOLDOWN_MS
-  )
+  const [resendAvailableAt, setResendAvailableAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
 
   const next = useMemo(
@@ -50,6 +53,16 @@ function VerifyEmailForm() {
     if (email) return
     router.replace(siteRoutes.signUp)
   }, [email, router])
+
+  useEffect(() => {
+    if (!email) return
+
+    const stored = getOtpResendAvailableAt(email)
+    if (stored !== null) {
+      setResendAvailableAt(stored)
+      setNow(Date.now())
+    }
+  }, [email])
 
   useEffect(() => {
     if (resendSecondsLeft <= 0) return
@@ -80,7 +93,7 @@ function VerifyEmailForm() {
       }
 
       toast.success("Verification code sent.")
-      setResendAvailableAt(Date.now() + OTP_RESEND_COOLDOWN_MS)
+      setResendAvailableAt(setOtpResendCooldown(email))
       setNow(Date.now())
       setPendingAction(null)
     } catch {
@@ -104,6 +117,7 @@ function VerifyEmailForm() {
             token: data.token,
             refreshToken: data.refreshToken,
           })
+          clearOtpResendCooldown(email)
           toast.success("Email verified.")
           router.push(next === siteRoutes.dashboard ? siteRoutes.onboarding : next)
           router.refresh()
@@ -123,6 +137,7 @@ function VerifyEmailForm() {
         token,
         refreshToken: result.envelope.data?.refreshToken,
       })
+      clearOtpResendCooldown(email)
       toast.success("Email verified.")
       router.push(siteRoutes.onboarding)
       router.refresh()
@@ -167,10 +182,10 @@ function VerifyEmailForm() {
           onChange={setOtp}
           disabled={isBusy}
           autoFocus
-          containerClassName="w-full gap-1"
+          containerClassName="w-full gap-2"
           aria-label="Verification code"
         >
-          <InputOTPGroup className="flex w-full min-w-0 gap-1">
+          <InputOTPGroup className="flex w-full min-w-0 gap-2">
             <InputOTPSlot index={0} className={OTP_SLOT_CLASS} />
             <InputOTPSlot index={1} className={OTP_SLOT_CLASS} />
             <InputOTPSlot index={2} className={OTP_SLOT_CLASS} />
@@ -185,9 +200,10 @@ function VerifyEmailForm() {
         <Button
           type="submit"
           className="w-full"
+          loading={pendingAction === "verify"}
           disabled={isBusy || otp.length !== 6}
         >
-          {pendingAction === "verify" ? "Verifying..." : "Verify email"}
+          Verify email
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
@@ -198,11 +214,14 @@ function VerifyEmailForm() {
               Didn&apos;t get a code?{" "}
               <button
                 type="button"
-                className="text-foreground disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-foreground disabled:opacity-50"
                 onClick={() => void handleResend()}
                 disabled={!canResend}
               >
-                {pendingAction === "resend" ? "Sending..." : "Resend code"}
+                {pendingAction === "resend" ? (
+                  <Spinner className="size-3.5" aria-hidden />
+                ) : null}
+                Resend code
               </button>
             </>
           )}
