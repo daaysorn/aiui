@@ -6,11 +6,13 @@ import type {
   BillingPlan,
   CatalogItem,
   CatalogKind,
+  LinkedAccount,
   Project,
   ProjectDetail,
   ProjectThread,
   RecentChat,
   UserOverview,
+  UserSession,
 } from "@/lib/api/types"
 import { getUserOverview } from "@/lib/session"
 
@@ -77,4 +79,14 @@ export async function fetchRecentChats(): Promise<RecentChat[]> {
       (left, right) =>
         new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
     )
+}
+
+export async function fetchLinkedAccounts(): Promise<LinkedAccount[]> {
+  const result = await serverApiRequest<LinkedAccount[]>("/v1/user/accounts")
+  return Array.isArray(result) ? result : []
+}
+
+export async function fetchSessions(): Promise<UserSession[]> {
+  const result = await serverApiRequest<UserSession[]>("/v1/user/sessions")
+  return Array.isArray(result) ? result : []
 }

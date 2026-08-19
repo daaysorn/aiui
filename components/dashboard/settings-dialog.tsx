@@ -5,14 +5,20 @@ import {
   BellIcon,
   CheckCircleIcon,
   CreditCardIcon,
+  DesktopIcon,
+  LinkIcon,
   ShieldCheckIcon,
+  SlidersHorizontalIcon,
   UserCircleIcon,
   XIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
 import { AccountPanel } from "@/components/dashboard/account-panel"
+import { AdvancedPanel } from "@/components/dashboard/advanced-panel"
+import { LinkedAccountsPanel } from "@/components/dashboard/linked-accounts-panel"
 import { PlansDialog } from "@/components/dashboard/plans-dialog"
+import { SessionsPanel } from "@/components/dashboard/sessions-panel"
 import { ThemeToggleRow } from "@/components/dashboard/theme-toggle-row"
 import { PasswordInput } from "@/components/auth/password-input"
 import { Button } from "@/components/ui/button"
@@ -36,7 +42,14 @@ import {
   type ChangePasswordState,
 } from "@/app/(dashboard)/dashboard/settings/actions"
 
-export type SettingsSection = "account" | "billing" | "preferences" | "security"
+export type SettingsSection =
+  | "account"
+  | "billing"
+  | "preferences"
+  | "security"
+  | "linked-accounts"
+  | "sessions"
+  | "advanced"
 
 const navItems: {
   id: SettingsSection
@@ -47,6 +60,9 @@ const navItems: {
   { id: "billing", label: "Billing", icon: CreditCardIcon },
   { id: "preferences", label: "Preferences", icon: BellIcon },
   { id: "security", label: "Security", icon: ShieldCheckIcon },
+  { id: "linked-accounts", label: "Linked accounts", icon: LinkIcon },
+  { id: "sessions", label: "Sessions", icon: DesktopIcon },
+  { id: "advanced", label: "Advanced", icon: SlidersHorizontalIcon },
 ]
 
 function formatCreditBalance(balance: number) {
@@ -248,6 +264,9 @@ function SettingsDialog({
     billing: "Plan and credit balance.",
     preferences: "Sound and appearance.",
     security: "Use a strong password.",
+    "linked-accounts": "Connect Google or GitHub.",
+    sessions: "Review signed-in devices.",
+    advanced: "Sign out or delete account.",
   }
 
   return (
@@ -315,6 +334,9 @@ function SettingsDialog({
             {section === "billing" ? <BillingPanel /> : null}
             {section === "preferences" ? <PreferencesPanel /> : null}
             {section === "security" ? <SecurityPanel /> : null}
+            {section === "linked-accounts" ? <LinkedAccountsPanel /> : null}
+            {section === "sessions" ? <SessionsPanel /> : null}
+            {section === "advanced" ? <AdvancedPanel /> : null}
           </div>
         </div>
       </DialogContent>

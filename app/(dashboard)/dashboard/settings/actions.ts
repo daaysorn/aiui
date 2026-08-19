@@ -63,8 +63,8 @@ export async function changePasswordAction(
   }
 
   try {
-    await serverApiRequest("/v1/user/change-password", {
-      method: "POST",
+    await serverApiRequest("/v1/user/password", {
+      method: "PATCH",
       json: {
         currentPassword,
         newPassword,
@@ -77,5 +77,106 @@ export async function changePasswordAction(
     }
 
     return { error: "Could not change password." }
+  }
+}
+
+export type LinkAccountState = {
+  error?: string
+  url?: string
+}
+
+export async function startLinkAccountAction(
+  provider: "google" | "github",
+  callbackURL: string
+): Promise<LinkAccountState> {
+  try {
+    const result = await serverApiRequest<{ url?: string; redirect?: boolean }>(
+      "/v1/user/accounts/link",
+      {
+        method: "POST",
+        json: { provider, callbackURL },
+      }
+    )
+    const url = typeof result.url === "string" ? result.url.trim() : ""
+    if (!url) {
+      return { error: "Could not start account link." }
+    }
+    return { url }
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return { error: error.message }
+    }
+    return { error: "Could not start account link." }
+  }
+}
+
+export type UnlinkAccountState = SettingsState
+
+export async function unlinkAccountAction(
+  provider: string
+): Promise<UnlinkAccountState> {
+  try {
+    await serverApiRequest(`/v1/user/accounts/${encodeURIComponent(provider)}`, {
+      method: "DELETE",
+    })
+    revalidatePath("/dashboard")
+    return { message: "Account unlinked." }
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return { error: error.message }
+    }
+    return { error: "Could not unlink account." }
+  }
+}
+
+export type RevokeSessionState = SettingsState
+
+export async function revokeSessionAction(
+  sessionId: string
+): Promise<RevokeSessionState> {
+  try {
+    await serverApiRequest(
+      `/v1/user/sessions/${encodeURIComponent(sessionId)}`,
+      { method: "DELETE" }
+    )
+    return { message: "Session ended." }
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return { error: error.message }
+    }
+    return { error: "Could not end session." }
+  }
+}
+
+export async function revokeOtherSessionsAction(): Promise<RevokeSessionState> {
+  try {
+    await serverApiRequest("/v1/user/sessions?mode=others", {
+      method: "DELETE",
+    })
+    return { message: "Other sessions ended." }
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return { error: error.message }
+    }
+    return { error: "Could not end sessions." }
+  }
+}
+
+export type DeleteAccountState = SettingsState
+
+export async function deleteAccountAction(
+  password: string | undefined
+): Promise<DeleteAccountState> {
+  try {
+    await serverApiRequest("/v1/user", {
+      method: "DELETE",
+      json: password ? { password } : {},
+    })
+    return { message: "Account deleted." }
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return { error: error.message }
+    }
+    return { error: "Could not delete account." }
   }
 }

@@ -15,6 +15,38 @@ export type SessionUser = {
   updatedAt: string
 }
 
+export type LinkedAccount = {
+  id: string
+  accountId: string
+  providerId: string
+  userId: string
+  createdAt: string
+  updatedAt: string
+  scopes?: string[]
+}
+
+export type UserSession = {
+  id: string
+  token: string
+  expiresAt: string
+  createdAt: string
+  updatedAt: string
+  ipAddress: string | null
+  browser: string | null
+  browserVersion: string | null
+  platform: string | null
+  platformVersion: string | null
+  architecture: string | null
+  device: string | null
+  deviceName: string | null
+  userAgent: string | null
+  current: boolean
+  userId: string
+  activeOrganizationId: string | null
+  activeTeamId: string | null
+  impersonatedBy: string | null
+}
+
 export type OverviewWorkspace = {
   id: string
   name: string

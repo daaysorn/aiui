@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import type { ReactNode } from "react"
+import { Suspense, type ReactNode } from "react"
 
 import { DashboardQueryProvider } from "@/components/dashboard/query-provider"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
@@ -34,16 +34,18 @@ export default async function DashboardLayout({
 
   return (
     <DashboardQueryProvider overview={overview}>
-      <DashboardShell
-        userName={user.name}
-        userHandle={user.username ?? user.displayUsername ?? user.name}
-        userImage={user.image}
-        planName={billing.plan?.name ?? "Free"}
-        creditBalance={billing.credits.balance}
-        showUpgrade={isFreePlan(billing.plan)}
-      >
-        {children}
-      </DashboardShell>
+      <Suspense fallback={null}>
+        <DashboardShell
+          userName={user.name}
+          userHandle={user.username ?? user.displayUsername ?? user.name}
+          userImage={user.image}
+          planName={billing.plan?.name ?? "Free"}
+          creditBalance={billing.credits.balance}
+          showUpgrade={isFreePlan(billing.plan)}
+        >
+          {children}
+        </DashboardShell>
+      </Suspense>
     </DashboardQueryProvider>
   )
 }

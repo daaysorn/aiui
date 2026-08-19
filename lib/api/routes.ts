@@ -32,10 +32,11 @@
  * GET    /v1/user/two-factor/setup    → { totpURI }
  * POST   /v1/user/two-factor/verify   { code }
  * POST   /v1/user/change-password     { currentPassword, newPassword, revokeOtherSessions? }
+ * PATCH  /v1/user/password            { currentPassword, newPassword, revokeOtherSessions? }
  * DELETE /v1/user/account             { password? }
  * GET    /v1/user/accounts            → linked OAuth accounts
- * POST   /v1/user/link-account        { provider, callbackURL? }
- * DELETE /v1/user/unlink-account/:provider
+ * POST   /v1/user/accounts/link       { provider, callbackURL? }
+ * DELETE /v1/user/accounts/{provider}
  * GET    /v1/user/check/username?username=…  → { available: boolean }
  * GET    /v1/user/check/telephone?telephone=…
  *
@@ -117,6 +118,8 @@ export type {
   ProjectItem,
   ProjectThread,
   PublicPaymentMethod,
+  LinkedAccount,
+  UserSession,
   SessionUser,
   Transaction,
   TransactionPage,

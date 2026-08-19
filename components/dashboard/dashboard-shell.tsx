@@ -1,7 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { useState, type ReactNode } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useState, type ReactNode } from "react"
 import {
   CaretRightIcon,
   CreditCardIcon,
@@ -51,6 +51,23 @@ function formatCreditBalance(balance: number) {
   return new Intl.NumberFormat("en-US").format(balance)
 }
 
+const settingsSections: SettingsSection[] = [
+  "account",
+  "billing",
+  "preferences",
+  "security",
+  "linked-accounts",
+  "sessions",
+  "advanced",
+]
+
+function parseSettingsSection(value: string | null): SettingsSection | null {
+  if (!value) return null
+  return settingsSections.includes(value as SettingsSection)
+    ? (value as SettingsSection)
+    : null
+}
+
 function PlanCredits({
   planName,
   creditBalance,
@@ -75,10 +92,18 @@ export function DashboardShell({
   children,
 }: DashboardShellProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlSection = parseSettingsSection(searchParams.get("settings"))
   const [plansOpen, setPlansOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsSection, setSettingsSection] =
-    useState<SettingsSection>("account")
+  const [settingsOpen, setSettingsOpen] = useState(Boolean(urlSection))
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>(
+    urlSection ?? "account"
+  )
+
+  useEffect(() => {
+    if (!urlSection) return
+    router.replace("/dashboard")
+  }, [urlSection, router])
 
   function openSettings(section: SettingsSection) {
     setSettingsSection(section)

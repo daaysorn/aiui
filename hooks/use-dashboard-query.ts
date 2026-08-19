@@ -5,9 +5,11 @@ import { useQuery } from "@tanstack/react-query"
 import {
   fetchBillingPlans,
   fetchCatalog,
+  fetchLinkedAccounts,
   fetchProject,
   fetchProjects,
   fetchRecentChats,
+  fetchSessions,
   fetchUserOverview,
 } from "@/lib/api/dashboard-data"
 import { getLocalChannel, listLocalChannels } from "@/lib/channels-store"
@@ -55,6 +57,20 @@ export function useRecentChats() {
   return useQuery({
     queryKey: queryKeys.recentChats,
     queryFn: fetchRecentChats,
+  })
+}
+
+export function useLinkedAccounts() {
+  return useQuery({
+    queryKey: queryKeys.linkedAccounts,
+    queryFn: fetchLinkedAccounts,
+  })
+}
+
+export function useSessions() {
+  return useQuery({
+    queryKey: queryKeys.sessions,
+    queryFn: fetchSessions,
   })
 }
 
