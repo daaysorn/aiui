@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   }
 
   if (!user.emailVerified) {
-    redirect(`/verify-email?email=${encodeURIComponent(user.email)}`)
+    redirect(siteRoutes.verifyEmail)
   }
 
   if (needsOnboarding(user)) {

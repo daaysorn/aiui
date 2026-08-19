@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
   }
 
   if (!user.emailVerified) {
-    redirect(`${siteRoutes.signUp}?step=verify&email=${encodeURIComponent(user.email)}`)
+    redirect(siteRoutes.verifyEmail)
   }
 
   if (!needsOnboarding(user)) {

@@ -19,6 +19,7 @@ import {
 } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
 import { envelopeCode } from "@/lib/api/envelope"
+import { setPendingVerifyEmail } from "@/lib/auth/pending-verify-email"
 import { LegalLink } from "@/components/auth/legal-link"
 import {
   buildAuthCallbackURL,
@@ -165,9 +166,10 @@ function SignInForm() {
       } | null
 
       if (envelopeCode(data) === "EMAIL_NOT_VERIFIED") {
-        router.push(
-          `${siteRoutes.signUp}?step=verify&email=${encodeURIComponent(parsed.data.identifier)}`
-        )
+        if (isEmailIdentifier(parsed.data.identifier)) {
+          setPendingVerifyEmail(parsed.data.identifier)
+        }
+        router.push(siteRoutes.verifyEmail)
         return
       }
 

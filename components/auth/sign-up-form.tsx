@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
 import { setOtpResendCooldown } from "@/lib/auth/otp-resend-cooldown"
+import { setPendingVerifyEmail } from "@/lib/auth/pending-verify-email"
 import { authCopy, siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
@@ -68,9 +69,8 @@ function SignUpForm() {
 
       toast.success("Account created. Verify your email.")
       setOtpResendCooldown(parsed.data.email)
-      router.push(
-        `${siteRoutes.verifyEmail}?email=${encodeURIComponent(parsed.data.email)}`
-      )
+      setPendingVerifyEmail(parsed.data.email)
+      router.push(siteRoutes.verifyEmail)
     } catch {
       toast.error("Sign up failed. Try again.")
       setPending(false)

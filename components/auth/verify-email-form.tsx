@@ -11,13 +11,18 @@ import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { Spinner } from "@/components/ui/spinner"
-import { authClient, persistSession } from "@/lib/api/client"
+import { authClient, getSession, persistSession } from "@/lib/api/client"
 import { sendVerificationOtp, verifyEmailOtp } from "@/lib/api/auth"
 import {
   clearOtpResendCooldown,
   getOtpResendAvailableAt,
   setOtpResendCooldown,
 } from "@/lib/auth/otp-resend-cooldown"
+import {
+  clearPendingVerifyEmail,
+  getPendingVerifyEmail,
+  setPendingVerifyEmail,
+} from "@/lib/auth/pending-verify-email"
 import { getSafeNextPath, siteRoutes } from "@/lib/site"
 
 import { TurnstileField } from "./turnstile-field"
@@ -27,7 +32,8 @@ const OTP_SLOT_CLASS = "rounded-lg text-lg"
 function VerifyEmailForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const email = searchParams.get("email")?.trim() ?? ""
+  const [email, setEmail] = useState("")
+  const [ready, setReady] = useState(false)
   const [otp, setOtp] = useState("")
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<"verify" | "resend" | null>(
@@ -49,9 +55,50 @@ function VerifyEmailForm() {
   const canResend = Boolean(email) && resendSecondsLeft === 0 && !isBusy
 
   useEffect(() => {
-    if (email) return
-    router.replace(siteRoutes.signUp)
-  }, [email, router])
+    let cancelled = false
+
+    async function resolveEmail() {
+      const fromQuery = searchParams.get("email")?.trim()
+      if (fromQuery) {
+        setPendingVerifyEmail(fromQuery)
+        const params = new URLSearchParams(searchParams.toString())
+        params.delete("email")
+        const query = params.toString()
+        router.replace(
+          query ? `${siteRoutes.verifyEmail}?${query}` : siteRoutes.verifyEmail
+        )
+      }
+
+      const stored = getPendingVerifyEmail() || fromQuery || ""
+      if (stored) {
+        if (!cancelled) {
+          setEmail(stored)
+          setReady(true)
+        }
+        return
+      }
+
+      const session = await getSession()
+      const user = session.data?.user
+      if (user?.email && !user.emailVerified) {
+        setPendingVerifyEmail(user.email)
+        if (!cancelled) {
+          setEmail(user.email)
+          setReady(true)
+        }
+        return
+      }
+
+      if (!cancelled) {
+        router.replace(siteRoutes.signUp)
+      }
+    }
+
+    void resolveEmail()
+    return () => {
+      cancelled = true
+    }
+  }, [router, searchParams])
 
   useEffect(() => {
     if (!email) return
@@ -117,6 +164,7 @@ function VerifyEmailForm() {
             refreshToken: data.refreshToken,
           })
           clearOtpResendCooldown(email)
+          clearPendingVerifyEmail()
           toast.success("Email verified.")
           router.push(next === siteRoutes.dashboard ? siteRoutes.onboarding : next)
           router.refresh()
@@ -137,6 +185,7 @@ function VerifyEmailForm() {
         refreshToken: result.envelope.data?.refreshToken,
       })
       clearOtpResendCooldown(email)
+      clearPendingVerifyEmail()
       toast.success("Email verified.")
       router.push(siteRoutes.onboarding)
       router.refresh()
@@ -146,7 +195,7 @@ function VerifyEmailForm() {
     }
   }
 
-  if (!email) {
+  if (!ready || !email) {
     return null
   }
 
@@ -168,8 +217,7 @@ function VerifyEmailForm() {
           Verify email
         </h1>
         <p className="min-w-0 text-sm text-muted-foreground">
-          Enter the six-digit code sent to{" "}
-          <span className="break-all text-primary">{email}</span>
+          Enter the six-digit code we sent you.
         </p>
       </div>
 
