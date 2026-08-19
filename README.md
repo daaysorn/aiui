@@ -1,6 +1,6 @@
-# aiui
+# daaybot
 
-Next.js frontend for the daaysorn AI website builder. Auth and dashboard talk to the Nest API in `builderbackend`.
+Next.js frontend for the daaybot AI website builder. Auth and dashboard talk to the Nest API in `builderbackend`.
 
 ## Setup
 

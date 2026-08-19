@@ -4,7 +4,7 @@ function siteHost() {
   try {
     return new URL(siteConfig.url).host
   } catch {
-    return "daaysorn.com"
+    return "daaybot.daaysorn.com"
   }
 }
 
@@ -25,7 +25,7 @@ export function normalizeAppPath(href: string) {
 
 /**
  * Path shown on the PageLightSwiss OG template
- * (e.g. `/privacy` → `daaysorn.com/privacy`).
+ * (e.g. `/privacy` → `daaybot.daaysorn.com/privacy`).
  */
 export function formatOgSitePath(path: string) {
   const pathname = normalizeAppPath(path)

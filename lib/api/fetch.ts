@@ -24,6 +24,7 @@ export class ApiRequestError extends ApiError {
 export type ApiFetchOptions = RequestInit & {
   json?: unknown
   token?: string | null
+  captchaToken?: string | null
 }
 
 /**
@@ -42,6 +43,10 @@ export async function apiFetch(
 
   if (init?.token) {
     headers.set("Authorization", `Bearer ${init.token}`)
+  }
+
+  if (init?.captchaToken) {
+    headers.set("x-captcha-response", init.captchaToken)
   }
 
   if (typeof window !== "undefined" && !headers.has("Origin")) {
@@ -110,6 +115,10 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${options.token}`)
   }
 
+  if (options.captchaToken) {
+    headers.set("x-captcha-response", options.captchaToken)
+  }
+
   if (typeof window !== "undefined") {
     headers.set("Origin", window.location.origin)
   }
@@ -156,3 +165,7 @@ export async function apiRequestOrThrow<T>(
 }
 
 export type { ApiFetchOptions as ApiRequestOptions }
+
+export function captchaHeaders(token: string): Record<string, string> {
+  return { "x-captcha-response": token }
+}

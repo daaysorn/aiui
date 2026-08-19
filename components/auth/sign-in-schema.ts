@@ -6,6 +6,7 @@ const signInSchema = z.object({
     .string()
     .min(1, "Enter your password.")
     .min(8, "Password must be at least 8 characters."),
+  captchaToken: z.string().min(1, "Complete the Turnstile check to continue."),
 })
 
 type SignInValues = z.infer<typeof signInSchema>
@@ -16,7 +17,7 @@ function getSignInFieldErrors(error: z.ZodError): SignInFieldErrors {
 
   for (const issue of error.issues) {
     const field = issue.path[0]
-    if (field === "identifier" || field === "password") {
+    if (field === "identifier" || field === "password" || field === "captchaToken") {
       result[field] ??= issue.message
     }
   }

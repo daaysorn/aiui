@@ -3,12 +3,13 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { SquaresFourIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
+import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/api/client"
+import { captchaHeaders } from "@/lib/api/fetch"
 import { siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
@@ -17,6 +18,7 @@ import {
   signUpSchema,
   type SignUpFieldErrors,
 } from "./sign-up-schema"
+import { TurnstileField } from "./turnstile-field"
 
 function SignUpForm() {
   const router = useRouter()
@@ -24,6 +26,7 @@ function SignUpForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<SignUpFieldErrors>({})
   const [pending, setPending] = useState(false)
 
@@ -36,6 +39,7 @@ function SignUpForm() {
       email,
       password,
       confirmPassword,
+      captchaToken: captchaToken ?? "",
     })
 
     if (!parsed.success) {
@@ -52,6 +56,7 @@ function SignUpForm() {
         email: parsed.data.email,
         password: parsed.data.password,
         callbackURL: siteRoutes.dashboard,
+        fetchOptions: { headers: captchaHeaders(parsed.data.captchaToken) },
       })
 
       if (result.error) {
@@ -62,7 +67,7 @@ function SignUpForm() {
 
       toast.success("Account created. Verify your email.")
       router.push(
-        `/auth/verify-email?email=${encodeURIComponent(parsed.data.email)}`
+        `${siteRoutes.verifyEmail}?email=${encodeURIComponent(parsed.data.email)}`
       )
     } catch {
       toast.error("Sign up failed. Try again.")
@@ -73,13 +78,7 @@ function SignUpForm() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-8">
       <header className="flex items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="inline-flex min-w-0 items-center gap-2 font-medium text-foreground"
-        >
-          <SquaresFourIcon className="size-5 shrink-0 text-primary" weight="fill" />
-          <span>daaysorn</span>
-        </Link>
+        <AuthBrand />
         <Button variant="outline" size="sm" render={<Link href={siteRoutes.signIn} />}>
           Sign in
         </Button>
@@ -154,6 +153,23 @@ function SignUpForm() {
           />
           {fieldErrors.confirmPassword ? (
             <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <TurnstileField
+            onChange={(token) => {
+              setCaptchaToken(token)
+              if (token && fieldErrors.captchaToken) {
+                setFieldErrors((current) => ({
+                  ...current,
+                  captchaToken: undefined,
+                }))
+              }
+            }}
+          />
+          {fieldErrors.captchaToken ? (
+            <p className="text-xs text-destructive">{fieldErrors.captchaToken}</p>
           ) : null}
         </div>
 

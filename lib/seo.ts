@@ -1,11 +1,11 @@
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://aiui.daaysorn.com"
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://daaybot.daaysorn.com"
 
 export const siteConfig = {
-  name: "aiui",
-  title: "aiui | daaysorn",
+  name: "daaybot",
+  title: "daaybot",
   description:
-    "aiui is the daaysorn interface builder: a clear, familiar UI system for products that work as well as they look.",
+    "daaybot is the AI website builder: sign in, manage projects, and build sites with Eve chat.",
   url: siteUrl,
   locale: "en_NG",
   creator: {
@@ -14,8 +14,7 @@ export const siteConfig = {
     email: "david@daaysorn.com",
   },
   keywords: [
-    "aiui",
-    "daaysorn",
+    "daaybot",
     "Tomiwa David",
     "design system",
     "interface builder",
@@ -23,7 +22,7 @@ export const siteConfig = {
     "Next.js",
   ],
   social: {
-    github: "https://github.com/daaysorn/aiui",
+    github: "https://github.com/daaysorn/daaybot",
     instagram: "https://www.instagram.com/daaysorn",
     x: "https://x.com/daaysorn",
   },

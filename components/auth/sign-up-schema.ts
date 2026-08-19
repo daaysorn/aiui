@@ -6,6 +6,7 @@ const signUpSchema = z
     email: z.string().trim().email("Enter a valid email."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string().min(8, "Confirm your password."),
+    captchaToken: z.string().min(1, "Complete the Turnstile check to continue."),
   })
   .refine((value) => value.password === value.confirmPassword, {
     message: "Passwords do not match.",
@@ -24,7 +25,8 @@ function getSignUpFieldErrors(error: z.ZodError): SignUpFieldErrors {
       field === "name" ||
       field === "email" ||
       field === "password" ||
-      field === "confirmPassword"
+      field === "confirmPassword" ||
+      field === "captchaToken"
     ) {
       result[field] ??= issue.message
     }

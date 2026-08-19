@@ -1,6 +1,6 @@
 # daaysorn Design System
 
-> Ported into **aiui** from [daaysorn.com](https://daaysorn.com). Runtime tokens live in `app/globals.css`. Fonts and shell live in `app/layout.tsx`. Page OG uses PageLightSwiss via `lib/og-page.ts`. Some source-site chrome (dock, footer, keeps) is documented here as the system contract and may not exist in this repo yet.
+> Ported into **daaybot** from [daaysorn.com](https://daaysorn.com). Runtime tokens live in `app/globals.css`. Fonts and shell live in `app/layout.tsx`. Page OG uses PageLightSwiss via `lib/og-page.ts`. Some source-site chrome (dock, footer, keeps) is documented here as the system contract and may not exist in this repo yet.
 
 | Meta          | Value                                                                                              |
 | ------------- | -------------------------------------------------------------------------------------------------- |

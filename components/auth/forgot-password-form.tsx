@@ -4,16 +4,18 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import { REGEXP_ONLY_DIGITS } from "input-otp"
-import { SquaresFourIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
+import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { authClient, persistSession } from "@/lib/api/client"
+import { captchaHeaders } from "@/lib/api/fetch"
 import { siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
+import { TurnstileField } from "./turnstile-field"
 
 function ForgotPasswordForm() {
   const router = useRouter()
@@ -21,6 +23,7 @@ function ForgotPasswordForm() {
   const [email, setEmail] = useState(() => searchParams.get("email")?.trim() ?? "")
   const [otp, setOtp] = useState("")
   const [password, setPassword] = useState("")
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [step, setStep] = useState<"email" | "reset">("email")
   const [pending, setPending] = useState(false)
 
@@ -32,9 +35,16 @@ function ForgotPasswordForm() {
   async function handleSendCode(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending) return
+    if (!captchaToken) {
+      toast.error("Complete the Turnstile check to continue.")
+      return
+    }
     setPending(true)
 
-    const result = await authClient.emailOtp.requestPasswordReset({ email })
+    const result = await authClient.emailOtp.requestPasswordReset({
+      email,
+      fetchOptions: { headers: captchaHeaders(captchaToken) },
+    })
     setPending(false)
 
     if (result.error) {
@@ -104,10 +114,7 @@ function ForgotPasswordForm() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-8">
       <header className="flex items-center justify-between gap-4">
-        <Link href="/" className="inline-flex items-center gap-2 font-medium">
-          <SquaresFourIcon className="size-5 text-primary" weight="fill" />
-          <span>daaysorn</span>
-        </Link>
+        <AuthBrand />
         <Button variant="outline" size="sm" render={<Link href={siteRoutes.signIn} />}>
           Sign in
         </Button>
@@ -145,6 +152,7 @@ function ForgotPasswordForm() {
             onChange={(event) => setEmail(event.target.value)}
             required
           />
+          <TurnstileField onChange={setCaptchaToken} />
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? "Sending..." : "Send reset code"}
           </Button>

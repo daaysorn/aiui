@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { FaGithub } from "react-icons/fa6"
 import { FcGoogle } from "react-icons/fc"
-import { SquaresFourIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
+import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useLastAuthMethod } from "@/hooks/use-last-auth-method"
@@ -17,6 +17,7 @@ import {
   persistSession,
   syncLastUsedLoginMethodCookie,
 } from "@/lib/api/client"
+import { captchaHeaders } from "@/lib/api/fetch"
 import { envelopeCode } from "@/lib/api/envelope"
 import {
   buildAuthCallbackURL,
@@ -32,6 +33,7 @@ import {
   type SignInFieldErrors,
 } from "./sign-in-schema"
 import { SocialAuthButton } from "./social-auth-button"
+import { TurnstileField } from "./turnstile-field"
 
 function AuthDivider() {
   return (
@@ -56,6 +58,7 @@ function SignInForm() {
   const lastUsed = useLastAuthMethod()
   const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<SignInFieldErrors>({})
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
 
@@ -120,7 +123,11 @@ function SignInForm() {
     event.preventDefault()
     if (pendingAction) return
 
-    const parsed = signInSchema.safeParse({ identifier, password })
+    const parsed = signInSchema.safeParse({
+      identifier,
+      password,
+      captchaToken: captchaToken ?? "",
+    })
     if (!parsed.success) {
       setFieldErrors(getSignInFieldErrors(parsed.error))
       return
@@ -130,14 +137,17 @@ function SignInForm() {
     setPendingAction("email")
 
     try {
+      const headers = captchaHeaders(parsed.data.captchaToken)
       const result = isEmailIdentifier(parsed.data.identifier)
         ? await authClient.signIn.email({
             email: parsed.data.identifier,
             password: parsed.data.password,
+            fetchOptions: { headers },
           })
         : await authClient.signIn.username({
             username: parsed.data.identifier,
             password: parsed.data.password,
+            fetchOptions: { headers },
           })
 
       if (result.error) {
@@ -187,13 +197,7 @@ function SignInForm() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-8">
       <header className="flex items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="inline-flex min-w-0 items-center gap-2 font-medium text-foreground"
-        >
-          <SquaresFourIcon className="size-5 shrink-0 text-primary" weight="fill" />
-          <span>daaysorn</span>
-        </Link>
+        <AuthBrand />
         <Button variant="outline" size="sm" render={<Link href={siteRoutes.signUp} />}>
           Create account
         </Button>
@@ -204,7 +208,7 @@ function SignInForm() {
           Sign in
         </h1>
         <p className="text-sm text-muted-foreground">
-          Use your daaysorn account to open the builder dashboard.
+          Use your daaybot account to open the builder dashboard.
         </p>
       </div>
 
@@ -267,6 +271,23 @@ function SignInForm() {
           />
           {fieldErrors.password ? (
             <p className="text-xs text-destructive">{fieldErrors.password}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <TurnstileField
+            onChange={(token) => {
+              setCaptchaToken(token)
+              if (token && fieldErrors.captchaToken) {
+                setFieldErrors((current) => ({
+                  ...current,
+                  captchaToken: undefined,
+                }))
+              }
+            }}
+          />
+          {fieldErrors.captchaToken ? (
+            <p className="text-xs text-destructive">{fieldErrors.captchaToken}</p>
           ) : null}
         </div>
 

@@ -4,9 +4,10 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import { REGEXP_ONLY_DIGITS } from "input-otp"
-import { CaretLeftIcon, SquaresFourIcon } from "@phosphor-icons/react"
+import { CaretLeftIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
+import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
@@ -14,12 +15,15 @@ import { authClient, persistSession } from "@/lib/api/client"
 import { sendVerificationOtp, verifyEmailOtp } from "@/lib/api/auth"
 import { getSafeNextPath, siteRoutes } from "@/lib/site"
 
+import { TurnstileField } from "./turnstile-field"
+
 function VerifyEmailForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialEmail = searchParams.get("email") ?? ""
   const [email, setEmail] = useState(initialEmail)
   const [otp, setOtp] = useState("")
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   const next = useMemo(
@@ -33,7 +37,12 @@ function VerifyEmailForm() {
       return
     }
 
-    const result = await sendVerificationOtp(email.trim())
+    if (!captchaToken) {
+      toast.error("Complete the Turnstile check to continue.")
+      return
+    }
+
+    const result = await sendVerificationOtp(email.trim(), captchaToken)
     if (!result.ok) {
       toast.error(result.envelope.message ?? "Could not send code.")
       return
@@ -94,10 +103,7 @@ function VerifyEmailForm() {
           <CaretLeftIcon className="size-4" />
           Back
         </Link>
-        <Link href="/" className="inline-flex items-center gap-2 font-medium">
-          <SquaresFourIcon className="size-5 text-primary" weight="fill" />
-          <span>daaysorn</span>
-        </Link>
+        <AuthBrand />
       </header>
 
       <div className="space-y-3">
@@ -136,6 +142,8 @@ function VerifyEmailForm() {
             </InputOTPGroup>
           </InputOTP>
         </div>
+
+        <TurnstileField onChange={setCaptchaToken} />
 
         <Button type="submit" className="w-full" disabled={pending || otp.length !== 6}>
           {pending ? "Verifying..." : "Verify email"}

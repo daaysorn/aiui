@@ -20,7 +20,7 @@ function OnboardingForm() {
       <div className="space-y-2">
         <h1 className="font-heading text-2xl font-semibold">Finish setup</h1>
         <p className="text-sm text-muted-foreground">
-          Pick a username and phone number for your daaysorn account.
+          Pick a username and phone number for your daaybot account.
         </p>
       </div>
       {state?.error ? (

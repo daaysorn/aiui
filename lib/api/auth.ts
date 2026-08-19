@@ -77,12 +77,13 @@ export async function updateProfile(input: {
   })
 }
 
-export async function sendVerificationOtp(email: string) {
+export async function sendVerificationOtp(email: string, captchaToken?: string) {
   return apiRequest<{ success?: boolean }>(
     getAuthPublicPath("/send/verification/email"),
     {
       method: "POST",
       json: { email, type: "email-verification" },
+      captchaToken,
     }
   )
 }

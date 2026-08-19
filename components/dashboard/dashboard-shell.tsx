@@ -39,7 +39,7 @@ export function DashboardShell({
       <aside className="hidden w-60 shrink-0 border-r border-border bg-card/40 p-4 md:flex md:flex-col">
         <div className="mb-8 space-y-1">
           <Link href="/dashboard" className="font-heading text-base font-semibold">
-            daaysorn
+            daaybot
           </Link>
           <p className="text-xs text-muted-foreground">Builder dashboard</p>
         </div>
@@ -78,7 +78,7 @@ export function DashboardShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border px-4 py-3 md:hidden">
           <Link href="/dashboard" className="font-heading text-sm font-semibold">
-            daaysorn
+            daaybot
           </Link>
           <Button variant="ghost" size="sm" onClick={handleSignOut}>
             Sign out
