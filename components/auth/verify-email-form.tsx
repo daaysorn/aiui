@@ -22,8 +22,7 @@ import { getSafeNextPath, siteRoutes } from "@/lib/site"
 
 import { TurnstileField } from "./turnstile-field"
 
-const OTP_SLOT_CLASS =
-  "size-auto min-w-0 flex-1 aspect-square rounded-lg border text-lg"
+const OTP_SLOT_CLASS = "rounded-lg text-lg"
 
 function VerifyEmailForm() {
   const router = useRouter()
@@ -182,10 +181,10 @@ function VerifyEmailForm() {
           onChange={setOtp}
           disabled={isBusy}
           autoFocus
-          containerClassName="w-full gap-2"
+          containerClassName="w-full"
           aria-label="Verification code"
         >
-          <InputOTPGroup className="flex w-full min-w-0 gap-2">
+          <InputOTPGroup className="w-full min-w-0">
             <InputOTPSlot index={0} className={OTP_SLOT_CLASS} />
             <InputOTPSlot index={1} className={OTP_SLOT_CLASS} />
             <InputOTPSlot index={2} className={OTP_SLOT_CLASS} />

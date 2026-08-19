@@ -282,6 +282,15 @@
   --tw-ring-shadow: 0 0 #0000 !important;
 }
 
+/* OTP slots are separate boxes. Gap on the library container does not reach them. */
+[data-slot="input-otp-group"] {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
 /* Toasts never show a close (X) control. */
 [data-sonner-toast] [data-close-button] {
   display: none !important;
