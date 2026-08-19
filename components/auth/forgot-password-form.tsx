@@ -9,6 +9,10 @@ import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { requestPasswordReset, resetPasswordWithToken } from "@/lib/api/auth"
+import {
+  getPasswordResetResendAvailableAt,
+  setPasswordResetResendCooldown,
+} from "@/lib/auth/otp-resend-cooldown"
 import { authCopy, siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
@@ -22,6 +26,12 @@ function ForgotPasswordForm() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [linkSent, setLinkSent] = useState(false)
   const [pending, setPending] = useState(false)
+  const [resendAvailableAt, setResendAvailableAt] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now())
+  const resendSecondsLeft = Math.max(
+    0,
+    Math.ceil((resendAvailableAt - now) / 1000)
+  )
 
   const resetToken = useMemo(
     () => searchParams.get("token")?.trim() ?? "",
@@ -34,6 +44,27 @@ function ForgotPasswordForm() {
       toast.error("Reset link expired. Request a new one.")
     }
   }, [searchParams])
+
+  useEffect(() => {
+    if (!email.trim()) return
+
+    const stored = getPasswordResetResendAvailableAt(email)
+    if (stored === null) return
+
+    setResendAvailableAt(stored)
+    setNow(Date.now())
+    if (!resetToken) setLinkSent(true)
+  }, [email, resetToken])
+
+  useEffect(() => {
+    if (resendSecondsLeft <= 0) return
+
+    const timer = window.setInterval(() => {
+      setNow(Date.now())
+    }, 250)
+
+    return () => window.clearInterval(timer)
+  }, [resendSecondsLeft])
 
   async function handleRequestLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -58,6 +89,8 @@ function ForgotPasswordForm() {
     }
 
     toast.success("Reset link sent.")
+    setResendAvailableAt(setPasswordResetResendCooldown(email.trim()))
+    setNow(Date.now())
     setLinkSent(true)
   }
 
@@ -127,9 +160,12 @@ function ForgotPasswordForm() {
             type="button"
             variant="outline"
             className="w-full"
+            disabled={resendSecondsLeft > 0}
             onClick={() => setLinkSent(false)}
           >
-            Send another link
+            {resendSecondsLeft > 0
+              ? `Send another in ${resendSecondsLeft}s`
+              : "Send another link"}
           </Button>
         </div>
       ) : (
