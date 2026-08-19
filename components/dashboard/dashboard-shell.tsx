@@ -45,10 +45,12 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { clearSession } from "@/lib/api/client"
+import { isFreePlan } from "@/lib/billing"
+import { useBillingCheckoutReturn } from "@/hooks/use-billing-checkout-return"
+import { useUserOverview } from "@/hooks/use-dashboard-query"
 
 type DashboardShellProps = {
   userName: string
-  userHandle: string
   userImage: string | null
   planName: string
   creditBalance: number
@@ -93,7 +95,6 @@ function PlanCredits({
 
 export function DashboardShell({
   userName,
-  userHandle,
   userImage,
   planName,
   creditBalance,
@@ -111,10 +112,21 @@ export function DashboardShell({
     urlSection ?? "account"
   )
 
+  const { data: overview } = useUserOverview()
+  useBillingCheckoutReturn()
+
+  const displayPlanName = overview?.billing.plan?.name ?? planName
+  const displayCreditBalance =
+    overview?.billing.credits.balance ?? creditBalance
+  const displayShowUpgrade = overview
+    ? isFreePlan(overview.billing.plan)
+    : showUpgrade
+
   useEffect(() => {
     if (!urlSection) return
+    if (searchParams.get("checkout")) return
     router.replace("/dashboard")
-  }, [urlSection, router])
+  }, [urlSection, router, searchParams])
 
   function openSettings(section: SettingsSection) {
     setSettingsSection(section)
@@ -160,9 +172,12 @@ export function DashboardShell({
                   <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex w-0 min-w-0 flex-1 flex-col gap-0.5 leading-none">
-                  <span className="truncate text-sm font-semibold">{userHandle}</span>
+                  <span className="truncate text-sm font-semibold">{userName}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    <PlanCredits planName={planName} creditBalance={creditBalance} />
+                    <PlanCredits
+                      planName={displayPlanName}
+                      creditBalance={displayCreditBalance}
+                    />
                   </span>
                 </div>
               </DropdownMenuTrigger>
@@ -181,9 +196,12 @@ export function DashboardShell({
                     <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5 leading-none">
-                    <span className="truncate font-semibold">{userHandle}</span>
+                    <span className="truncate font-semibold">{userName}</span>
                     <span className="truncate text-xs text-muted-foreground">
-                      <PlanCredits planName={planName} creditBalance={creditBalance} />
+                      <PlanCredits
+                      planName={displayPlanName}
+                      creditBalance={displayCreditBalance}
+                    />
                     </span>
                   </div>
                   <CaretRightIcon className="ml-auto size-4" weight="bold" />
@@ -211,7 +229,7 @@ export function DashboardShell({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {showUpgrade ? (
+            {displayShowUpgrade ? (
               <Button
                 variant="ghost"
                 size="xs"
@@ -231,7 +249,7 @@ export function DashboardShell({
         </header>
         <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </SidebarInset>
-      {showUpgrade ? (
+      {displayShowUpgrade ? (
         <PlansDialog open={plansOpen} onOpenChange={setPlansOpen} />
       ) : null}
       <SettingsDialog

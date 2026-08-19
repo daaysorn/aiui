@@ -20,6 +20,8 @@ export function useUserOverview() {
   return useQuery({
     queryKey: queryKeys.overview,
     queryFn: fetchUserOverview,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   })
 }
 

@@ -13,7 +13,7 @@ import {
   updateProfileAction,
   type SettingsState,
 } from "@/app/(dashboard)/dashboard/settings/actions"
-import { PhoneNumberField, type PhoneValue } from "@/components/auth/phone-number-field"
+import { PhoneNumberField, normalizePhoneValue, type PhoneValue } from "@/components/auth/phone-number-field"
 import {
   SettingsCard,
   SettingsNotice,
@@ -99,9 +99,9 @@ function AccountPanel() {
   const checkPhone = useCallback((value: string) => checkTelephoneAvailable(value), [])
 
   const currentUsername = (user?.username ?? "").trim()
-  const currentPhone = (user?.telephone ?? "").trim()
+  const currentPhone = normalizePhoneValue(user?.telephone) ?? ""
   const usernameChanged = username.trim() !== currentUsername
-  const phoneChanged = (phone ?? "").trim() !== currentPhone
+  const phoneChanged = (normalizePhoneValue(phone) ?? "") !== currentPhone
 
   const usernameStatus = useAvailability(usernameChanged ? username : "", {
     check: checkUsername,
@@ -129,7 +129,7 @@ function AccountPanel() {
     if (!user || seeded.current) return
     seeded.current = true
     setUsername(user.username ?? "")
-    setPhone((user.telephone as PhoneValue) ?? "")
+    setPhone(normalizePhoneValue(user.telephone) ?? "")
   }, [user])
 
   useEffect(() => {
@@ -265,7 +265,7 @@ function AccountPanel() {
                 id="settings-telephone"
                 name="telephone"
                 value={phone}
-                onChange={setPhone}
+                onChange={(value) => setPhone(value ?? "")}
                 invalid={phoneStatus === "taken"}
               >
                 {phoneStatus !== "idle" ? (

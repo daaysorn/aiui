@@ -37,7 +37,6 @@ export default async function DashboardLayout({
       <Suspense fallback={null}>
         <DashboardShell
           userName={user.name}
-          userHandle={user.username ?? user.displayUsername ?? user.name}
           userImage={user.image}
           planName={billing.plan?.name ?? "Free"}
           creditBalance={billing.credits.balance}

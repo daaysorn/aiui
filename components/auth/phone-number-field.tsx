@@ -1,8 +1,13 @@
 "use client"
 
 import type { ComponentProps, ComponentType, ReactNode } from "react"
+import { useMemo } from "react"
 import { CaretDownIcon } from "@phosphor-icons/react"
-import PhoneInput, { type Value as PhoneValue } from "react-phone-number-input"
+import PhoneInput, {
+  type Value as PhoneValue,
+  parsePhoneNumber,
+  type Country,
+} from "react-phone-number-input"
 import flags from "react-phone-number-input/flags"
 import "react-phone-number-input/style.css"
 
@@ -14,6 +19,18 @@ type CountrySelectOption = {
   value?: string
   label: string
   divider?: boolean
+}
+
+function normalizePhoneValue(
+  value: PhoneValue | string | undefined | null,
+  defaultCountry: Country = "NG"
+): PhoneValue | undefined {
+  if (!value?.trim()) {
+    return undefined
+  }
+
+  const parsed = parsePhoneNumber(value, defaultCountry)
+  return (parsed?.number as PhoneValue | undefined) ?? undefined
 }
 
 function PhoneTextInput(props: ComponentProps<typeof Input>) {
@@ -90,6 +107,11 @@ function PhoneNumberField({
   invalid?: boolean
   children?: ReactNode
 }) {
+  const normalizedValue = useMemo(
+    () => normalizePhoneValue(value),
+    [value]
+  )
+
   return (
     <div
       className={cn(
@@ -106,7 +128,7 @@ function PhoneNumberField({
         countryCallingCodeEditable={false}
         defaultCountry="NG"
         placeholder={placeholder}
-        value={value}
+        value={normalizedValue}
         onChange={onChange}
         inputComponent={PhoneTextInput}
         countrySelectComponent={CountrySelect}
@@ -117,4 +139,4 @@ function PhoneNumberField({
   )
 }
 
-export { PhoneNumberField, type PhoneValue }
+export { PhoneNumberField, normalizePhoneValue, type PhoneValue }
