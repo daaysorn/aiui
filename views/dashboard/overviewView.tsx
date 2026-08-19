@@ -228,7 +228,7 @@ export function OverviewView({
             <h1 className="inline-flex max-w-full flex-row items-center justify-center gap-2.5 font-heading text-3xl font-semibold tracking-tight xs:text-4xl">
               <GreetingEmoji className="size-10 xs:size-12" />
               <span
-                className="min-w-0 motion-safe:animate-greeting-shimmer"
+                className="min-w-0 motion-safe:animate-text-shimmer"
                 suppressHydrationWarning
               >
                 {greet(firstName)}
