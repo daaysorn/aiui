@@ -1,14 +1,11 @@
 import { redirect } from "next/navigation"
 
-import { serverApiFetch } from "@/lib/api/server-fetch"
-import type { UserOverview } from "@/lib/api/types"
+import { getUserOverview } from "@/lib/session"
 import { OverviewView } from "@/views/dashboard/overviewView"
 
 export default async function DashboardPage() {
-  let overview: UserOverview
-  try {
-    overview = await serverApiFetch<UserOverview>("/v1/user/overview")
-  } catch {
+  const overview = await getUserOverview()
+  if (!overview) {
     redirect("/sign-in")
   }
 

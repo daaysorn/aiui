@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import {
   FolderIcon,
   GearIcon,
+  LightningIcon,
   MoonIcon,
   PlusIcon,
   RobotIcon,
@@ -14,8 +15,11 @@ import {
   SquaresFourIcon,
   SunIcon,
 } from "@phosphor-icons/react"
+import { toast } from "sonner"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { upgradeToProAction } from "@/app/(dashboard)/dashboard/actions"
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -68,18 +72,50 @@ function ThemeToggle() {
 
 type DashboardShellProps = {
   userName: string
-  userEmail: string
+  userImage: string | null
+  planName: string
+  creditBalance: number
+  showUpgrade?: boolean
   children: ReactNode
 }
 
-export function DashboardShell({ userName, userEmail, children }: DashboardShellProps) {
+function formatCreditBalance(balance: number) {
+  return new Intl.NumberFormat("en-US").format(balance)
+}
+
+export function DashboardShell({
+  userName,
+  userImage,
+  planName,
+  creditBalance,
+  showUpgrade = false,
+  children,
+}: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [upgrading, setUpgrading] = useState(false)
 
   async function handleSignOut() {
     await clearSession()
     router.push("/sign-in")
     router.refresh()
+  }
+
+  async function handleUpgrade() {
+    setUpgrading(true)
+    try {
+      const result = await upgradeToProAction()
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+      if (result.ok) {
+        toast.success("You're on Pro.")
+        router.refresh()
+      }
+    } finally {
+      setUpgrading(false)
+    }
   }
 
   const initials = userName
@@ -91,7 +127,7 @@ export function DashboardShell({ userName, userEmail, children }: DashboardShell
 
   return (
     <SidebarProvider>
-      <Sidebar variant="inset">
+      <Sidebar>
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -141,6 +177,17 @@ export function DashboardShell({ userName, userEmail, children }: DashboardShell
         </SidebarContent>
 
         <SidebarFooter>
+          {showUpgrade ? (
+            <Button
+              size="sm"
+              className="w-full justify-start gap-2"
+              loading={upgrading}
+              onClick={() => void handleUpgrade()}
+            >
+              {upgrading ? null : <LightningIcon className="size-4" />}
+              Upgrade
+            </Button>
+          ) : null}
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
@@ -152,14 +199,23 @@ export function DashboardShell({ userName, userEmail, children }: DashboardShell
                     />
                   }
                 >
-                  <Avatar className="size-8 rounded-lg">
+                  <Avatar className="size-8 rounded-lg after:rounded-lg">
+                    {userImage ? (
+                      <AvatarImage
+                        src={userImage}
+                        alt={userName}
+                        className="rounded-lg"
+                      />
+                    ) : null}
                     <AvatarFallback className="rounded-lg text-xs">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex min-w-0 flex-col gap-0.5 leading-none">
                     <span className="truncate text-sm font-medium">{userName}</span>
-                    <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {planName} · {formatCreditBalance(creditBalance)} credits
+                    </span>
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="top" align="start" className="w-56">
