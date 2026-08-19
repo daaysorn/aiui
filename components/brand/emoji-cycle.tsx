@@ -3,19 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Lottie, type LottieHandle } from "lottie-react"
 
+import {
+  brandCycleEmojis,
+  greetingEmojis,
+} from "@/components/brand/lottie-data"
+import {
+  useLottiePlaybackSync,
+  usePlaybackGate,
+} from "@/components/brand/use-lottie-playback"
 import { cn } from "@/lib/utils"
 
-const BRAND_CYCLE_SOURCES = [
-  "/lottie/wink.json",
-  "/lottie/head-shake.json",
-  "/lottie/face-in-clouds.json",
-] as const
-
-const GREETING_SOURCES = {
-  morning: "/lottie/greeting-morning.json",
-  afternoon: "/lottie/greeting-afternoon.json",
-  evening: "/lottie/greeting-evening.json",
-} as const
+const GREETING_SOURCES = greetingEmojis
 
 export type GreetingPeriod = keyof typeof GREETING_SOURCES
 
@@ -29,44 +27,9 @@ export function greetingPeriod(now = new Date()): GreetingPeriod {
 const HOLD_MS = 700
 const FADE_MS = 550
 
-const animationCache = new Map<string, Promise<object>>()
-
-function loadAnimation(src: string) {
-  let pending = animationCache.get(src)
-  if (!pending) {
-    pending = fetch(src).then((response) => {
-      if (!response.ok) {
-        throw new Error(`Could not load ${src}`)
-      }
-      return response.json() as Promise<object>
-    })
-    animationCache.set(src, pending)
-  }
-
-  return pending.then((data) => JSON.parse(JSON.stringify(data)) as object)
-}
-
-function BrandEmojiCycle({ className }: { className?: string }) {
-  const [mounted, setMounted] = useState(false)
-  const [layer, setLayer] = useState<{ id: number; data: object } | null>(null)
-  const [previous, setPrevious] = useState<object | null>(null)
-  const [currentReady, setCurrentReady] = useState(false)
+function useReducedMotion() {
   const [reduceMotion, setReduceMotion] = useState(false)
-
   const reduceMotionRef = useRef(false)
-  const indexRef = useRef(0)
-  const layerRef = useRef<{ id: number; data: object } | null>(null)
-  const previousRef = useRef<object | null>(null)
-  const cycleRef = useRef(0)
-  const nextIdRef = useRef(1)
-
-  layerRef.current = layer
-  previousRef.current = previous
-
-  useEffect(() => {
-    setMounted(true)
-    void Promise.all(BRAND_CYCLE_SOURCES.map((src) => loadAnimation(src)))
-  }, [])
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -79,47 +42,86 @@ function BrandEmojiCycle({ className }: { className?: string }) {
     return () => media.removeEventListener("change", sync)
   }, [])
 
+  return { reduceMotion, reduceMotionRef }
+}
+
+function BrandEmojiCycle({ className }: { className?: string }) {
+  const lottieRef = useRef<LottieHandle>(null)
+  const { reduceMotion, reduceMotionRef } = useReducedMotion()
+  const [paused, setPaused] = useState(false)
+  const pausedRef = useRef(false)
+
+  const [layer, setLayer] = useState<{ id: number; data: object } | null>(null)
+  const [previous, setPrevious] = useState<object | null>(null)
+  const [currentReady, setCurrentReady] = useState(false)
+
+  const indexRef = useRef(0)
+  const layerRef = useRef<{ id: number; data: object } | null>(null)
+  const previousRef = useRef<object | null>(null)
+  const cycleRef = useRef(0)
+  const nextIdRef = useRef(1)
+
+  const shouldPlay = !reduceMotion && !paused
+  const playIfAllowed = usePlaybackGate(shouldPlay)
+
+  pausedRef.current = paused
+  layerRef.current = layer
+  previousRef.current = previous
+
+  useLottiePlaybackSync(lottieRef, shouldPlay && Boolean(layer))
+
   useEffect(() => {
-    if (!mounted) return
-    void loadAnimation(BRAND_CYCLE_SOURCES[0]).then((data) => {
-      setLayer({ id: 0, data })
-      setCurrentReady(false)
-    })
-  }, [mounted])
+    setLayer({ id: 0, data: brandCycleEmojis[0] })
+    setCurrentReady(false)
+  }, [])
 
   const subscriptions = useMemo(
     () => ({
       ready: () => {
+        playIfAllowed(lottieRef.current)
         setCurrentReady(true)
         if (!previousRef.current) return
         window.setTimeout(() => setPrevious(null), FADE_MS)
       },
       complete: () => {
-        if (reduceMotionRef.current) return
+        if (reduceMotionRef.current || pausedRef.current) return
         const cycle = ++cycleRef.current
         window.setTimeout(() => {
           if (cycle !== cycleRef.current) return
-          const nextIndex = (indexRef.current + 1) % BRAND_CYCLE_SOURCES.length
-          void loadAnimation(BRAND_CYCLE_SOURCES[nextIndex]).then((data) => {
-            if (cycle !== cycleRef.current) return
-            setPrevious(layerRef.current?.data ?? null)
-            indexRef.current = nextIndex
-            setLayer({ id: nextIdRef.current++, data })
-            setCurrentReady(false)
-          })
+          const nextIndex = (indexRef.current + 1) % brandCycleEmojis.length
+          const data = brandCycleEmojis[nextIndex]
+          if (cycle !== cycleRef.current) return
+          setPrevious(layerRef.current?.data ?? null)
+          indexRef.current = nextIndex
+          setLayer({ id: nextIdRef.current++, data })
+          setCurrentReady(false)
         }, HOLD_MS)
       },
     }),
-    []
+    [playIfAllowed, reduceMotionRef]
   )
 
+  function togglePlayback() {
+    const lottie = lottieRef.current
+    if (paused) {
+      setPaused(false)
+      lottie?.play()
+      return
+    }
+    setPaused(true)
+    lottie?.pause()
+  }
+
   return (
-    <span
+    <button
+      type="button"
       className={cn(
-        "pointer-events-none relative size-7 shrink-0 overflow-hidden contain-[size]",
+        "relative isolate size-7 shrink-0 overflow-hidden bg-transparent p-0 contain-[size]",
         className
       )}
-      aria-hidden
+      aria-label={paused ? "Play daaybot" : "Pause daaybot"}
+      aria-pressed={paused}
+      onClick={togglePlayback}
     >
       {previous ? (
         <Lottie
@@ -128,7 +130,7 @@ function BrandEmojiCycle({ className }: { className?: string }) {
           autoplay={false}
           loop={false}
           className={cn(
-            "absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent will-change-[opacity] transition-opacity duration-550 ease-in-out [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent",
+            "pointer-events-none absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent will-change-[opacity] transition-opacity duration-550 ease-in-out [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent",
             currentReady ? "opacity-0" : "opacity-100"
           )}
         />
@@ -138,45 +140,44 @@ function BrandEmojiCycle({ className }: { className?: string }) {
           key={layer.id}
           as="span"
           src={layer.data}
-          autoplay={!reduceMotion}
+          lottieRef={lottieRef}
+          autoplay={false}
           loop={false}
           subscriptions={subscriptions}
           className={cn(
-            "absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent will-change-[opacity] transition-opacity duration-550 ease-in-out [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent",
+            "pointer-events-none absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent will-change-[opacity] transition-opacity duration-550 ease-in-out [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent",
             currentReady || !previous ? "opacity-100" : "opacity-0"
           )}
         />
       ) : null}
-    </span>
+    </button>
   )
 }
 
 function GreetingEmoji({ className }: { className?: string }) {
   const lottieRef = useRef<LottieHandle>(null)
+  const { reduceMotion } = useReducedMotion()
   const [period, setPeriod] = useState<GreetingPeriod | null>(null)
-  const [data, setData] = useState<object | null>(null)
-  const [reduceMotion, setReduceMotion] = useState(false)
   const [paused, setPaused] = useState(false)
 
-  useEffect(() => {
-    const next = greetingPeriod()
-    setPeriod(next)
-    let cancelled = false
-    void loadAnimation(GREETING_SOURCES[next]).then((animation) => {
-      if (!cancelled) setData(animation)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const data = period ? GREETING_SOURCES[period] : null
+  const shouldPlay = Boolean(data) && !reduceMotion && !paused
+  const playIfAllowed = usePlaybackGate(shouldPlay)
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const sync = () => setReduceMotion(media.matches)
-    sync()
-    media.addEventListener("change", sync)
-    return () => media.removeEventListener("change", sync)
+    setPeriod(greetingPeriod())
   }, [])
+
+  useLottiePlaybackSync(lottieRef, shouldPlay)
+
+  const subscriptions = useMemo(
+    () => ({
+      ready: () => {
+        playIfAllowed(lottieRef.current)
+      },
+    }),
+    [playIfAllowed]
+  )
 
   function togglePlayback() {
     const lottie = lottieRef.current
@@ -207,8 +208,9 @@ function GreetingEmoji({ className }: { className?: string }) {
           as="span"
           src={data}
           lottieRef={lottieRef}
-          autoplay={!reduceMotion}
+          autoplay={false}
           loop={!reduceMotion && !paused}
+          subscriptions={subscriptions}
           className="pointer-events-none absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent"
         />
       ) : null}

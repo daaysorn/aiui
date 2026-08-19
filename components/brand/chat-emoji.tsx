@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Lottie, type LottieHandle } from "lottie-react"
 
 import { chatEmojiData } from "@/components/brand/lottie-data"
+import {
+  useLottiePlaybackSync,
+  usePlaybackGate,
+} from "@/components/brand/use-lottie-playback"
 import { cn } from "@/lib/utils"
 
 export type ChatEmojiMood =
@@ -43,6 +47,10 @@ function ChatEmoji({
   const playlist = Array.isArray(sources) ? sources : [sources]
   const animation = playlist[cycleIndex % playlist.length]
   const cycling = playlist.length > 1 && !reduceMotion
+  const shouldPlay = !reduceMotion && !paused
+  const playIfAllowed = usePlaybackGate(shouldPlay)
+
+  useLottiePlaybackSync(lottieRef, shouldPlay)
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -67,6 +75,9 @@ function ChatEmoji({
 
   const subscriptions = useMemo(
     () => ({
+      ready: () => {
+        playIfAllowed(lottieRef.current)
+      },
       complete: () => {
         if (reduceMotionRef.current || pausedRef.current) return
         if (cycling) {
@@ -79,7 +90,7 @@ function ChatEmoji({
         lottie.play()
       },
     }),
-    [cycling]
+    [cycling, playIfAllowed]
   )
 
   const label = CHAT_EMOJI_LABEL[mood]
@@ -111,7 +122,7 @@ function ChatEmoji({
         as="span"
         src={animation}
         lottieRef={lottieRef}
-        autoplay={!reduceMotion}
+        autoplay={false}
         loop={false}
         subscriptions={subscriptions}
         className="pointer-events-none absolute inset-0 block size-full min-h-0 min-w-0 [&_svg]:block [&_svg]:size-full"
