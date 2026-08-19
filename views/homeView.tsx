@@ -5,7 +5,7 @@ export function HomeView({ actions }: { actions?: ReactNode }) {
     <div className="flex min-w-0 flex-col gap-6 text-sm leading-loose">
       <div className="space-y-3">
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          Build sites with daaybot
+          Build sites with Daaybot
         </h1>
         <p className="text-muted-foreground">
           Sign in to manage projects, workspace credits, and your builder

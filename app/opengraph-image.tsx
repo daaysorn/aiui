@@ -1,11 +1,11 @@
 import { createPageOgImage } from "@/lib/og-page"
 
 const og = createPageOgImage({
-  title: "daaybot",
+  title: "Daaybot",
   description: "AI website builder with a clear, familiar design system.",
   path: "/",
   labels: ["Product", "Builder", "AI"],
-  alt: "daaybot",
+  alt: "Daaybot",
 })
 
 export const alt = og.alt

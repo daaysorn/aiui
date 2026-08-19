@@ -8,6 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Use Montserrat for headings, Geist for body/paragraph text, and JetBrains Mono for code.
 - Always write the brand name as lowercase `daaysorn`, including at the beginning of sentences.
+- Always write the product name as `Daaybot` (capital D) in all user-facing content, copy, and code strings. Never lowercase it as `daaybot`.
 - Page Open Graph descriptions/subtitles must stay on one line (short; no multi-line marketing copy under the title).
 - Form/page subtitles (the muted helper text under a heading) must be 4-6 words max — no long marketing copy.
 - Never add border lines (`border`, `border-*`, `divide-*`) to any element unless the user explicitly instructs it. Use background color (`bg-muted`, `bg-card`, etc.) or spacing to create visual separation instead.

@@ -35,7 +35,7 @@ const sections: LegalSection[] = [
       <>
         <p>This policy applies when you:</p>
         <ul>
-          <li>browse marketing pages for daaybot;</li>
+          <li>browse marketing pages for Daaybot;</li>
           <li>create an account, sign in, or reset your password;</li>
           <li>use the dashboard, projects, settings, or billing surfaces;</li>
           <li>contact us by email.</li>
@@ -99,7 +99,7 @@ const sections: LegalSection[] = [
         <ul>
           <li>
             infrastructure and email providers that help us host and deliver
-            daaybot;
+            Daaybot;
           </li>
           <li>authentication and captcha providers when you use those features;</li>
           <li>payment or billing partners when you purchase credits or plans;</li>
@@ -147,7 +147,7 @@ const sections: LegalSection[] = [
     title: "Children",
     content: (
       <p>
-        daaybot is not directed at children under 13. We do not knowingly collect
+        Daaybot is not directed at children under 13. We do not knowingly collect
         personal information from children. Contact us if you believe a child has
         provided information and we will take appropriate steps to delete it.
       </p>

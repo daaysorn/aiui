@@ -36,7 +36,7 @@ const sections: LegalSection[] = [
     content: (
       <p>
         You must be at least 13 years old (or the minimum age of digital consent
-        in your country, if higher) to create an account. If you use daaybot on
+        in your country, if higher) to create an account. If you use Daaybot on
         behalf of an organization, you represent that you have authority to bind
         that organization to these Terms.
       </p>
@@ -66,7 +66,7 @@ const sections: LegalSection[] = [
       <>
         <p>You agree not to:</p>
         <ul>
-          <li>use daaybot for unlawful, harmful, or fraudulent purposes;</li>
+          <li>use Daaybot for unlawful, harmful, or fraudulent purposes;</li>
           <li>harass others or publish content that infringes third-party rights;</li>
           <li>probe, scrape, or overload the service without permission;</li>
           <li>circumvent security, captcha, rate limits, or credit controls;</li>
@@ -81,7 +81,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          daaybot helps you create and manage website projects. AI-assisted builds
+          Daaybot helps you create and manage website projects. AI-assisted builds
           may produce draft code, copy, or assets. You are responsible for reviewing
           output before publishing it and for ensuring it complies with applicable
           law.
@@ -113,10 +113,10 @@ const sections: LegalSection[] = [
       <>
         <p>
           You retain ownership of content you submit. You grant us a license to
-          host, process, and display that content as needed to operate daaybot.
+          host, process, and display that content as needed to operate Daaybot.
         </p>
         <p>
-          The daaybot name, branding, software, and documentation are owned by{" "}
+          The Daaybot name, branding, software, and documentation are owned by{" "}
           {siteConfig.creator.name} or licensors and may not be copied or reused
           without permission except as allowed by applicable open-source licenses
           for specific components we publish.
@@ -129,7 +129,7 @@ const sections: LegalSection[] = [
     title: "Disclaimer of warranties",
     content: (
       <p>
-        daaybot is provided on an &quot;as is&quot; and &quot;as available&quot;
+        Daaybot is provided on an &quot;as is&quot; and &quot;as available&quot;
         basis without warranties of any kind, to the fullest extent permitted by
         law. We do not warrant uninterrupted, secure, or error-free operation.
       </p>

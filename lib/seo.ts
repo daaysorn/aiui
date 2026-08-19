@@ -2,10 +2,10 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://daaybot.daaysorn.com"
 
 export const siteConfig = {
-  name: "daaybot",
-  title: "daaybot",
+  name: "Daaybot",
+  title: "Daaybot",
   description:
-    "daaybot is the AI website builder: sign in, manage projects, and build sites with Eve chat.",
+    "Daaybot is the AI website builder: sign in, manage projects, and build sites with Eve chat.",
   url: siteUrl,
   locale: "en_NG",
   creator: {
@@ -14,7 +14,7 @@ export const siteConfig = {
     email: "david@daaysorn.com",
   },
   keywords: [
-    "daaybot",
+    "Daaybot",
     "Tomiwa David",
     "design system",
     "interface builder",
@@ -22,7 +22,7 @@ export const siteConfig = {
     "Next.js",
   ],
   social: {
-    github: "https://github.com/daaysorn/daaybot",
+    github: "https://github.com/daaysorn/Daaybot",
     instagram: "https://www.instagram.com/daaysorn",
     x: "https://x.com/daaysorn",
   },

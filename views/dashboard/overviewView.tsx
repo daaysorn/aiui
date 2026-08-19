@@ -13,6 +13,7 @@ import {
   ThumbsUpIcon,
 } from "@phosphor-icons/react"
 
+import { ChatEmoji, type ChatEmojiMood } from "@/components/brand/chat-emoji"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
 import { Marker, MarkerContent } from "@/components/ui/marker"
@@ -49,6 +50,10 @@ function greet(name: string) {
   return `Evening, ${name}`
 }
 
+function isSearchQuery(text: string) {
+  return /\b(search|look up|google|find online|web search)\b/i.test(text)
+}
+
 function InputBar({
   value,
   onChange,
@@ -57,7 +62,7 @@ function InputBar({
   onTranscript,
   disabled,
   streaming,
-  placeholder = "Message daaybot…",
+  placeholder = "Message Daaybot…",
 }: {
   value: string
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
@@ -256,7 +261,7 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: `I received: "${trimmed}". This is where daaybot's response would stream in.`,
+          content: `I received: "${trimmed}". This is where Daaybot's response would stream in.`,
           timestamp: new Date(),
         },
       ])
@@ -272,6 +277,18 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
   }
 
   const hasMessages = messages.length > 0
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")
+
+  const chatMood: ChatEmojiMood = streaming
+    ? isSearchQuery(lastUser?.content ?? input)
+      ? "searching"
+      : "thinking"
+    : lastAssistant && liked[lastAssistant.id] === "down"
+      ? "sad"
+      : lastUser && /^(huh+\??|\?\?+|what\??)$/i.test(lastUser.content.trim())
+        ? "confused"
+        : "default"
 
   return (
     <div className="flex h-full flex-col">
@@ -279,9 +296,12 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
         {!hasMessages ? (
           /* Empty state — greeting + input centered together */
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-            <h1 className="font-heading text-3xl font-semibold tracking-tight xs:text-4xl">
-              {greet(firstName)}
-            </h1>
+            <div className="flex flex-col items-center gap-4">
+              <ChatEmoji mood={chatMood} className="size-16" />
+              <h1 className="font-heading text-3xl font-semibold tracking-tight xs:text-4xl">
+                {greet(firstName)}
+              </h1>
+            </div>
             <div className="w-full">
               <InputBar
                 value={input}
@@ -292,7 +312,7 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                 streaming={streaming}
               />
               <p className="mt-3 text-center text-xs text-muted-foreground/40">
-                daaybot can make mistakes. Check important info.
+                Daaybot can make mistakes. Check important info.
               </p>
             </div>
           </div>
@@ -334,8 +354,11 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                           </MessageContent>
                         </Message>
                       ) : (
-                        /* Assistant — plain text, left-aligned, no bubble, no avatar */
+                        /* Assistant — plain text, left-aligned, mood face on latest */
                         <Message align="start">
+                          {msg.id === lastAssistant?.id && !streaming ? (
+                            <ChatEmoji mood={chatMood} className="size-8 self-start" />
+                          ) : null}
                           <MessageContent>
                             <Bubble variant="ghost" align="start">
                               <BubbleContent className="text-sm leading-relaxed">
@@ -395,14 +418,11 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                   {streaming && (
                     <MessageScrollerItem messageId="__streaming__">
                       <Message align="start">
+                        <ChatEmoji mood={chatMood} className="size-8 self-start" />
                         <MessageContent>
                           <Bubble variant="ghost" align="start">
-                            <BubbleContent>
-                              <span className="inline-flex gap-1">
-                                <span className="animate-bounce text-muted-foreground" style={{ animationDelay: "0ms" }}>●</span>
-                                <span className="animate-bounce text-muted-foreground" style={{ animationDelay: "150ms" }}>●</span>
-                                <span className="animate-bounce text-muted-foreground" style={{ animationDelay: "300ms" }}>●</span>
-                              </span>
+                            <BubbleContent className="text-sm text-muted-foreground">
+                              {chatMood === "searching" ? "Searching…" : "Thinking…"}
                             </BubbleContent>
                           </Bubble>
                         </MessageContent>
@@ -429,7 +449,7 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
             streaming={streaming}
           />
           <p className="mt-2 text-center text-xs text-muted-foreground/40">
-            daaybot can make mistakes. Check important info.
+            Daaybot can make mistakes. Check important info.
           </p>
         </div>
       )}

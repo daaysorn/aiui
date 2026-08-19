@@ -2,10 +2,10 @@ import { createPageOgImage } from "@/lib/og-page"
 
 const og = createPageOgImage({
   title: "Terms of Service",
-  description: "Rules for accounts, projects, AI builds, and credits on daaybot.",
+  description: "Rules for accounts, projects, AI builds, and credits on Daaybot.",
   path: "/terms",
   labels: ["Legal", "Terms"],
-  alt: "Terms of Service | daaybot",
+  alt: "Terms of Service | Daaybot",
 })
 
 export const alt = og.alt

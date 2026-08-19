@@ -212,7 +212,7 @@ function SignInForm() {
           Sign in
         </h1>
         <p className="text-sm text-muted-foreground">
-          Use your daaybot account to open the builder dashboard.
+          Use your Daaybot account to open the builder dashboard.
         </p>
       </div>
 

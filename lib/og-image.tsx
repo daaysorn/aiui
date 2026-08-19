@@ -145,7 +145,7 @@ function EditorialDark({ portrait }: { portrait: string }) {
               lineHeight: 1,
             }}
           >
-            daaybot
+            Daaybot
           </div>
           <div
             style={{
@@ -251,7 +251,7 @@ function GlassIdentity({ portrait }: { portrait: string }) {
                 lineHeight: 1,
               }}
             >
-              daaybot
+              Daaybot
             </div>
             <div style={{ display: "flex", marginTop: 22 }}>
               <BrandLine />
@@ -366,7 +366,7 @@ function LightSwiss({ portrait }: { portrait: string }) {
             lineHeight: 0.92,
           }}
         >
-          daaybot
+          Daaybot
         </div>
         <div
           style={{
@@ -488,7 +488,7 @@ function PageLightSwiss({
             letterSpacing: "-0.04em",
           }}
         >
-          daaybot
+          Daaybot
         </span>
         <span
           style={{
@@ -706,7 +706,7 @@ function SplitContrast({ portrait }: { portrait: string }) {
               marginTop: 7,
             }}
           >
-            behind daaybot
+            behind Daaybot
           </span>
         </div>
       </div>
@@ -723,7 +723,7 @@ function SplitContrast({ portrait }: { portrait: string }) {
           letterSpacing: "-0.055em",
         }}
       >
-        daaybot
+        Daaybot
       </div>
     </div>
   )
@@ -770,7 +770,7 @@ function ProductConstellation({ portrait }: { portrait: string }) {
             letterSpacing: "-0.05em",
           }}
         >
-          daaybot
+          Daaybot
         </span>
         <span
           style={{

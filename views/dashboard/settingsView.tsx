@@ -20,7 +20,7 @@ export function SettingsView({ user }: { user: SessionUser }) {
   return (
     <DashboardSection
       title="Settings"
-      description="Profile details for your daaybot account."
+      description="Profile details for your Daaybot account."
     >
       <form
         action={formAction}

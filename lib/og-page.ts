@@ -12,7 +12,7 @@ export type PageOgConfig = {
   /** App route pathname, e.g. `/privacy` or `privacy`. */
   path: string
   labels?: string[]
-  /** Defaults to `{title} | daaybot`. */
+  /** Defaults to `{title} | Daaybot`. */
   alt?: string
 }
 

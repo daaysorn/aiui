@@ -8,8 +8,6 @@ import {
   FolderIcon,
   GearIcon,
   MoonIcon,
-  PlusIcon,
-  RobotIcon,
   SignOutIcon,
   SquaresFourIcon,
   SunIcon,
@@ -18,6 +16,7 @@ import { toast } from "sonner"
 
 import { upgradeToProAction } from "@/app/(dashboard)/dashboard/actions"
 
+import { AuthBrand } from "@/components/auth/auth-brand"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -33,7 +32,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -127,35 +125,13 @@ export function DashboardShell({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <RobotIcon className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-heading font-semibold">daaybot</span>
-                  <span className="text-xs text-muted-foreground">Builder</span>
-                </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-
-          <div className="px-2 pt-1">
-            <Button
-              size="sm"
-              className="w-full justify-start gap-2"
-              render={<Link href="/dashboard/projects/new" />}
-            >
-              <PlusIcon className="size-4" />
-              New project
-            </Button>
+          <div className="px-2 py-1.5">
+            <AuthBrand href="/dashboard" />
           </div>
         </SidebarHeader>
 
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navItems.map(({ href, label, icon: Icon, exact }) => {

@@ -2,10 +2,10 @@ import { createPageOgImage } from "@/lib/og-page"
 
 const og = createPageOgImage({
   title: "Privacy Policy",
-  description: "How daaybot collects, uses, and protects your information.",
+  description: "How Daaybot collects, uses, and protects your information.",
   path: "/privacy",
   labels: ["Legal", "Privacy", "Data"],
-  alt: "Privacy Policy | daaybot",
+  alt: "Privacy Policy | Daaybot",
 })
 
 export const alt = og.alt

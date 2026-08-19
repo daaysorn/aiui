@@ -161,7 +161,7 @@
 
 @utility animate-text-shimmer {
   /* Glint is theme-aware (see --shimmer-glint) so it reads in light AND dark.
-     A narrower peak makes the sweep more visible on the daaybot wordmark. */
+     A narrower peak makes the sweep more visible on the Daaybot wordmark. */
   background-image: linear-gradient(
     90deg,
     var(--shimmer-base) 0%,
