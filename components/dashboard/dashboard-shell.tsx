@@ -82,8 +82,27 @@ type DashboardShellProps = {
   userHandle: string
   userImage: string | null
   planName: string
+  creditBalance: number
   showUpgrade?: boolean
   children: ReactNode
+}
+
+function formatCreditBalance(balance: number) {
+  return new Intl.NumberFormat("en-US").format(balance)
+}
+
+function PlanCredits({
+  planName,
+  creditBalance,
+}: {
+  planName: string
+  creditBalance: number
+}) {
+  return (
+    <>
+      {planName} · {formatCreditBalance(creditBalance)} credits
+    </>
+  )
 }
 
 export function DashboardShell({
@@ -91,6 +110,7 @@ export function DashboardShell({
   userHandle,
   userImage,
   planName,
+  creditBalance,
   showUpgrade = false,
   children,
 }: DashboardShellProps) {
@@ -131,7 +151,7 @@ export function DashboardShell({
                 <div className="flex w-0 min-w-0 flex-1 flex-col gap-0.5 leading-none">
                   <span className="truncate text-sm font-semibold">{userHandle}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {planName}
+                    <PlanCredits planName={planName} creditBalance={creditBalance} />
                   </span>
                 </div>
               </DropdownMenuTrigger>
@@ -152,7 +172,7 @@ export function DashboardShell({
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5 leading-none">
                     <span className="truncate font-semibold">{userHandle}</span>
                     <span className="truncate text-xs text-muted-foreground">
-                      {planName}
+                      <PlanCredits planName={planName} creditBalance={creditBalance} />
                     </span>
                   </div>
                   <CaretRightIcon className="ml-auto size-4" weight="bold" />

@@ -39,6 +39,7 @@ export default async function DashboardLayout({
         userHandle={user.username ?? user.displayUsername ?? user.name}
         userImage={user.image}
         planName={billing.plan?.name ?? "Free"}
+        creditBalance={billing.credits.balance}
         showUpgrade={isFreePlan(billing.plan)}
       >
         {children}
