@@ -2,13 +2,20 @@
 
 import { useEffect, useState, useTransition } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { GithubLogoIcon, GoogleLogoIcon, SpinnerGapIcon } from "@phosphor-icons/react"
+import { GithubLogoIcon, GoogleLogoIcon } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
 import {
   startLinkAccountAction,
   unlinkAccountAction,
 } from "@/app/(dashboard)/dashboard/settings/actions"
+import {
+  SettingsCard,
+  SettingsEmpty,
+  SettingsLoading,
+  SettingsPanel,
+  SettingsRow,
+} from "@/components/dashboard/settings-ui"
 import { Button } from "@/components/ui/button"
 import { useLinkedAccounts } from "@/hooks/use-dashboard-query"
 import { queryKeys } from "@/lib/query/keys"
@@ -23,6 +30,12 @@ function providerLabel(providerId: string) {
   if (providerId === "github") return "GitHub"
   if (providerId === "credential") return "Email and password"
   return providerId
+}
+
+function providerIcon(providerId: string) {
+  if (providerId === "google") return GoogleLogoIcon
+  if (providerId === "github") return GithubLogoIcon
+  return null
 }
 
 function LinkedAccountsPanel() {
@@ -72,49 +85,48 @@ function LinkedAccountsPanel() {
   const linkedIds = new Set(accounts.map((account) => account.providerId))
 
   return (
-    <div className="flex max-w-lg flex-col gap-3">
-      {isLoading ? (
-        <div className="flex items-center gap-2 rounded-xl bg-muted p-5 text-sm text-muted-foreground">
-          <SpinnerGapIcon className="size-4 animate-spin" aria-hidden />
-          Loading linked accounts…
-        </div>
-      ) : null}
+    <SettingsPanel>
+      {isLoading ? <SettingsLoading label="Loading linked accounts…" /> : null}
 
       {!isLoading && accounts.length === 0 ? (
-        <div className="rounded-xl bg-muted p-5 text-sm text-muted-foreground">
-          No linked accounts yet.
-        </div>
+        <SettingsEmpty label="No linked accounts yet." />
       ) : null}
 
-      {accounts.map((account) => (
-        <div
-          key={account.id}
-          className="flex items-center justify-between gap-4 rounded-xl bg-muted p-5"
-        >
-          <div className="min-w-0 flex flex-col gap-1">
-            <p className="text-sm font-medium">{providerLabel(account.providerId)}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              Connected {new Date(account.createdAt).toLocaleDateString()}
-            </p>
+      {!isLoading && accounts.length > 0 ? (
+        <SettingsCard title="Connected" description="Sign-in methods on your account.">
+          <div className="flex flex-col gap-2">
+            {accounts.map((account) => {
+              const Icon = providerIcon(account.providerId)
+              return (
+                <SettingsRow
+                  key={account.id}
+                  leading={
+                    Icon ? <Icon className="size-4" weight="bold" /> : undefined
+                  }
+                  title={providerLabel(account.providerId)}
+                  description={`Connected ${new Date(account.createdAt).toLocaleDateString()}`}
+                  action={
+                    account.providerId === "credential" ? null : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        loading={pendingUnlink === account.providerId}
+                        disabled={pendingUnlink !== null}
+                        onClick={() => handleUnlink(account.providerId)}
+                      >
+                        Unlink
+                      </Button>
+                    )
+                  }
+                />
+              )
+            })}
           </div>
-          {account.providerId === "credential" ? null : (
-            <Button
-              variant="ghost"
-              size="sm"
-              loading={pendingUnlink === account.providerId}
-              disabled={pendingUnlink !== null}
-              onClick={() => handleUnlink(account.providerId)}
-            >
-              Unlink
-            </Button>
-          )}
-        </div>
-      ))}
+        </SettingsCard>
+      ) : null}
 
-      <div className="flex flex-col gap-2 rounded-xl bg-muted p-5">
-        <p className="text-sm font-medium">Connect another account</p>
-        <p className="text-sm text-muted-foreground">Use Google or GitHub sign in.</p>
-        <div className="flex flex-wrap gap-2 pt-1">
+      <SettingsCard title="Add provider" description="Use Google or GitHub sign in.">
+        <div className="flex flex-wrap gap-2">
           {linkProviders.map((provider) => {
             const Icon = provider.icon
             const linked = linkedIds.has(provider.id)
@@ -132,8 +144,8 @@ function LinkedAccountsPanel() {
             )
           })}
         </div>
-      </div>
-    </div>
+      </SettingsCard>
+    </SettingsPanel>
   )
 }
 

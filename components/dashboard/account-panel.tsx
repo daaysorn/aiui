@@ -14,6 +14,11 @@ import {
   type SettingsState,
 } from "@/app/(dashboard)/dashboard/settings/actions"
 import { PhoneNumberField, type PhoneValue } from "@/components/auth/phone-number-field"
+import {
+  SettingsCard,
+  SettingsNotice,
+  SettingsPanel,
+} from "@/components/dashboard/settings-ui"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -155,130 +160,132 @@ function AccountPanel() {
   if (!user) return null
 
   return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-5 pb-1">
-      {state?.error ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </p>
-      ) : null}
-      {state?.message ? (
-        <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
-          {state.message}
-        </p>
-      ) : null}
-      {photoError ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {photoError}
-        </p>
-      ) : null}
-      <div className="flex items-center gap-4">
-        <div className="relative size-20 shrink-0">
-          <button
-            type="button"
-            className="size-full cursor-pointer overflow-hidden rounded-full"
-            onClick={() => fileRef.current?.click()}
-            aria-label="Change photo"
-          >
-            <Avatar className="size-full">
-              <AvatarImage src={preview ?? user.image ?? undefined} alt={user.name} />
-              <AvatarFallback>{initialsFromName(user.name)}</AvatarFallback>
-            </Avatar>
-          </button>
-          <span className="pointer-events-none absolute right-0.5 bottom-0.5 z-10 flex size-7 items-center justify-center rounded-full bg-muted text-foreground">
-            <CameraIcon className="size-3.5" weight="fill" />
-          </span>
-        </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <button
-            type="button"
-            className="w-fit cursor-pointer text-sm font-medium"
-            onClick={() => fileRef.current?.click()}
-          >
-            Change photo
-          </button>
-          <p className="text-sm text-muted-foreground">JPG or PNG only.</p>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={handlePhotoChange}
-        />
-        {imageData ? <input type="hidden" name="image" value={imageData} /> : null}
-      </div>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-email" className="text-sm font-medium">
-          Email
-        </label>
-        <Input
-          id="settings-email"
-          value={user.email}
-          placeholder={authCopy.placeholders.email}
-          disabled
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-name" className="text-sm font-medium">
-          Name
-        </label>
-        <Input
-          id="settings-name"
-          name="name"
-          defaultValue={user.name}
-          placeholder={authCopy.placeholders.name}
-          required
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-username" className="text-sm font-medium">
-          Username
-        </label>
-        <div className="relative">
-          <Input
-            id="settings-username"
-            name="username"
-            value={username}
-            placeholder={authCopy.placeholders.username}
-            autoComplete="username"
-            maxLength={30}
-            onChange={(event) => setUsername(event.target.value)}
-            aria-invalid={usernameStatus === "taken" || undefined}
-            className={cn(usernameStatus !== "idle" && "pr-8")}
-          />
-          {usernameStatus !== "idle" ? (
-            <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-              <StatusIcon status={usernameStatus} />
-            </span>
-          ) : null}
-        </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-telephone" className="text-sm font-medium">
-          Phone
-        </label>
-        <PhoneNumberField
-          id="settings-telephone"
-          name="telephone"
-          value={phone}
-          onChange={setPhone}
-          invalid={phoneStatus === "taken"}
-        >
-          {phoneStatus !== "idle" ? (
-            <span className="pointer-events-none flex shrink-0 items-center pr-2.5">
-              <StatusIcon status={phoneStatus} />
-            </span>
-          ) : null}
-        </PhoneNumberField>
-      </div>
-      <Button
-        type="submit"
-        className="self-end"
-        loading={pending}
-        disabled={usernameBlocked || phoneBlocked}
-      >
-        Save changes
-      </Button>
+    <form action={formAction}>
+      <SettingsPanel>
+        {state?.error ? <SettingsNotice tone="error">{state.error}</SettingsNotice> : null}
+        {state?.message ? (
+          <SettingsNotice tone="success">{state.message}</SettingsNotice>
+        ) : null}
+        {photoError ? <SettingsNotice tone="error">{photoError}</SettingsNotice> : null}
+
+        <SettingsCard title="Profile photo" description="JPG or PNG only.">
+          <div className="flex items-center gap-4">
+            <div className="relative size-20 shrink-0">
+              <button
+                type="button"
+                className="size-full cursor-pointer overflow-hidden rounded-full"
+                onClick={() => fileRef.current?.click()}
+                aria-label="Change photo"
+              >
+                <Avatar className="size-full">
+                  <AvatarImage src={preview ?? user.image ?? undefined} alt={user.name} />
+                  <AvatarFallback>{initialsFromName(user.name)}</AvatarFallback>
+                </Avatar>
+              </button>
+              <span className="pointer-events-none absolute right-0.5 bottom-0.5 z-10 flex size-7 items-center justify-center rounded-full bg-muted text-foreground">
+                <CameraIcon className="size-3.5" weight="fill" />
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-col gap-2">
+              <button
+                type="button"
+                className="w-fit cursor-pointer text-sm font-medium"
+                onClick={() => fileRef.current?.click()}
+              >
+                Upload new photo
+              </button>
+              <p className="text-sm text-muted-foreground">
+                Square crop applied automatically.
+              </p>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={handlePhotoChange}
+            />
+            {imageData ? <input type="hidden" name="image" value={imageData} /> : null}
+          </div>
+        </SettingsCard>
+
+        <SettingsCard title="Profile details" description="How you appear across daaysorn.">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="settings-email" className="text-sm font-medium">
+                Email
+              </label>
+              <Input
+                id="settings-email"
+                value={user.email}
+                placeholder={authCopy.placeholders.email}
+                disabled
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="settings-name" className="text-sm font-medium">
+                Name
+              </label>
+              <Input
+                id="settings-name"
+                name="name"
+                defaultValue={user.name}
+                placeholder={authCopy.placeholders.name}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="settings-username" className="text-sm font-medium">
+                Username
+              </label>
+              <div className="relative">
+                <Input
+                  id="settings-username"
+                  name="username"
+                  value={username}
+                  placeholder={authCopy.placeholders.username}
+                  autoComplete="username"
+                  maxLength={30}
+                  onChange={(event) => setUsername(event.target.value)}
+                  aria-invalid={usernameStatus === "taken" || undefined}
+                  className={cn(usernameStatus !== "idle" && "pr-8")}
+                />
+                {usernameStatus !== "idle" ? (
+                  <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                    <StatusIcon status={usernameStatus} />
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="settings-telephone" className="text-sm font-medium">
+                Phone
+              </label>
+              <PhoneNumberField
+                id="settings-telephone"
+                name="telephone"
+                value={phone}
+                onChange={setPhone}
+                invalid={phoneStatus === "taken"}
+              >
+                {phoneStatus !== "idle" ? (
+                  <span className="pointer-events-none flex shrink-0 items-center pr-2.5">
+                    <StatusIcon status={phoneStatus} />
+                  </span>
+                ) : null}
+              </PhoneNumberField>
+            </div>
+            <Button
+              type="submit"
+              className="self-start"
+              loading={pending}
+              disabled={usernameBlocked || phoneBlocked}
+            >
+              Save changes
+            </Button>
+          </div>
+        </SettingsCard>
+      </SettingsPanel>
     </form>
   )
 }

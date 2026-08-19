@@ -16,6 +16,7 @@ export async function attachBillingPlanAction(input: {
   planId: string
   organizationId?: string
   seats?: number
+  returnUrl?: string
 }): Promise<UpgradeState> {
   const planId = input.planId.trim()
   if (!planId) {
@@ -31,6 +32,7 @@ export async function attachBillingPlanAction(input: {
         planId,
         ...(input.organizationId ? { organizationId: input.organizationId } : {}),
         ...(input.seats ? { seats: input.seats } : {}),
+        ...(input.returnUrl ? { returnUrl: input.returnUrl } : {}),
       },
     })
     paymentUrl = billingPaymentUrl(result)

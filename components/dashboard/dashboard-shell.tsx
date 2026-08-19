@@ -9,6 +9,7 @@ import {
   SignOutIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react"
+import { toast } from "sonner"
 
 import { AuthBrand } from "@/components/auth/auth-brand"
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
@@ -20,6 +21,14 @@ import {
 import { ThemeToggleRow } from "@/components/dashboard/theme-toggle-row"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,6 +105,8 @@ export function DashboardShell({
   const urlSection = parseSettingsSection(searchParams.get("settings"))
   const [plansOpen, setPlansOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(Boolean(urlSection))
+  const [signOutOpen, setSignOutOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(
     urlSection ?? "account"
   )
@@ -111,9 +122,16 @@ export function DashboardShell({
   }
 
   async function handleSignOut() {
-    await clearSession()
-    router.push("/sign-in")
-    router.refresh()
+    setSigningOut(true)
+    try {
+      await clearSession()
+      setSignOutOpen(false)
+      router.push("/sign-in")
+      router.refresh()
+    } catch {
+      toast.error("Could not sign out.")
+      setSigningOut(false)
+    }
   }
 
   const nameParts = userName.trim().split(/\s+/).filter(Boolean)
@@ -187,7 +205,7 @@ export function DashboardShell({
                   <ThemeToggleRow />
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => void handleSignOut()}>
+                <DropdownMenuItem onClick={() => setSignOutOpen(true)}>
                   <SignOutIcon weight="duotone" />
                   Log out
                 </DropdownMenuItem>
@@ -222,6 +240,26 @@ export function DashboardShell({
         section={settingsSection}
         onSectionChange={setSettingsSection}
       />
+      <Dialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg font-semibold">
+              Log out?
+            </DialogTitle>
+            <DialogDescription>
+              You will need to sign in again to use daaysorn.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setSignOutOpen(false)}>
+              Cancel
+            </Button>
+            <Button loading={signingOut} onClick={() => void handleSignOut()}>
+              Log out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   )
 }
