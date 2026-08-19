@@ -19,7 +19,9 @@ function AuthBrand({
       )}
     >
       <BrandEmojiCycle />
-      <span className="motion-safe:animate-text-shimmer">daaybot</span>
+      <span className="motion-safe:animate-text-shimmer animation-duration-[4s]">
+        daaybot
+      </span>
     </Link>
   )
 }

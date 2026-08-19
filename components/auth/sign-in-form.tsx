@@ -19,10 +19,12 @@ import {
 } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
 import { envelopeCode } from "@/lib/api/envelope"
+import { LegalLink } from "@/components/auth/legal-link"
 import {
   buildAuthCallbackURL,
   getSafeNextPath,
   resolveSocialAuthErrorMessage,
+  authCopy,
   siteRoutes,
 } from "@/lib/site"
 
@@ -241,6 +243,7 @@ function SignInForm() {
           <Input
             id="identifier"
             autoComplete="username"
+            placeholder={authCopy.placeholders.identifier}
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             aria-invalid={Boolean(fieldErrors.identifier)}
@@ -255,16 +258,14 @@ function SignInForm() {
             <label htmlFor="password" className="text-sm font-medium">
               Password
             </label>
-            <Link
-              href={forgotHref}
-              className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            >
+            <LegalLink href={forgotHref} className="text-xs text-muted-foreground">
               Forgot password?
-            </Link>
+            </LegalLink>
           </div>
           <PasswordInput
             id="password"
             autoComplete="current-password"
+            placeholder={authCopy.placeholders.password}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             aria-invalid={Boolean(fieldErrors.password)}

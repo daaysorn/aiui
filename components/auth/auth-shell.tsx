@@ -1,10 +1,12 @@
+import type { ReactNode } from "react"
+
 import { cn } from "@/lib/utils"
 
 function AuthShell({
   children,
   className,
 }: {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
 }) {
   return (

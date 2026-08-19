@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
-import { siteRoutes } from "@/lib/site"
+import { authCopy, siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
 import {
@@ -101,6 +101,7 @@ function SignUpForm() {
           <Input
             id="name"
             autoComplete="name"
+            placeholder={authCopy.placeholders.name}
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
@@ -117,6 +118,7 @@ function SignUpForm() {
             id="email"
             type="email"
             autoComplete="email"
+            placeholder={authCopy.placeholders.email}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -133,6 +135,7 @@ function SignUpForm() {
             id="password"
             showStrength
             autoComplete="new-password"
+            placeholder={authCopy.placeholders.newPassword}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
@@ -148,6 +151,7 @@ function SignUpForm() {
           <PasswordInput
             id="confirmPassword"
             autoComplete="new-password"
+            placeholder={authCopy.placeholders.confirmPassword}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
           />

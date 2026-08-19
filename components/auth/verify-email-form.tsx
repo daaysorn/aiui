@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { authClient, persistSession } from "@/lib/api/client"
 import { sendVerificationOtp, verifyEmailOtp } from "@/lib/api/auth"
-import { getSafeNextPath, siteRoutes } from "@/lib/site"
+import { authCopy, getSafeNextPath, siteRoutes } from "@/lib/site"
 
 import { TurnstileField } from "./turnstile-field"
 
@@ -121,6 +121,7 @@ function VerifyEmailForm() {
           <Input
             id="email"
             type="email"
+            placeholder={authCopy.placeholders.email}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required

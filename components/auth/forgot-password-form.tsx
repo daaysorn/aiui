@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { authClient, persistSession } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
-import { siteRoutes } from "@/lib/site"
+import { authCopy, siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
 import { TurnstileField } from "./turnstile-field"
@@ -135,6 +135,7 @@ function ForgotPasswordForm() {
         <form className="space-y-4" onSubmit={handleTokenReset}>
           <PasswordInput
             showStrength
+            placeholder={authCopy.placeholders.resetPassword}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -148,6 +149,7 @@ function ForgotPasswordForm() {
         <form className="space-y-4" onSubmit={handleSendCode}>
           <Input
             type="email"
+            placeholder={authCopy.placeholders.email}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -168,6 +170,7 @@ function ForgotPasswordForm() {
           </InputOTP>
           <PasswordInput
             showStrength
+            placeholder={authCopy.placeholders.resetPassword}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required

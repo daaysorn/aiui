@@ -5,6 +5,7 @@ import { useActionState } from "react"
 import { submitOnboarding, type OnboardingState } from "@/app/onboarding/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { authCopy } from "@/lib/site"
 
 function OnboardingForm() {
   const [state, formAction, pending] = useActionState<OnboardingState | null, FormData>(
@@ -32,13 +33,26 @@ function OnboardingForm() {
         <label htmlFor="username" className="text-sm font-medium">
           Username
         </label>
-        <Input id="username" name="username" minLength={3} maxLength={30} required />
+        <Input
+          id="username"
+          name="username"
+          placeholder={authCopy.placeholders.username}
+          minLength={3}
+          maxLength={30}
+          required
+        />
       </div>
       <div className="space-y-2">
         <label htmlFor="telephone" className="text-sm font-medium">
           Phone
         </label>
-        <Input id="telephone" name="telephone" type="tel" required />
+        <Input
+          id="telephone"
+          name="telephone"
+          type="tel"
+          placeholder={authCopy.placeholders.telephone}
+          required
+        />
       </div>
       <Button type="submit" disabled={pending}>
         {pending ? "Saving..." : "Continue to dashboard"}
