@@ -274,11 +274,20 @@
   margin-top: 0.375rem;
 }
 
-/* Enabled buttons and links use a pointer cursor. */
+/* Enabled buttons, links, and menu items use a pointer cursor. */
 a[href],
 button:not(:disabled),
 [role="button"]:not(:disabled):not([aria-disabled="true"]),
+[role="menuitem"]:not([data-disabled]):not([aria-disabled="true"]),
+[role="menuitemcheckbox"]:not([data-disabled]):not([aria-disabled="true"]),
+[role="menuitemradio"]:not([data-disabled]):not([aria-disabled="true"]),
+[role="option"]:not([data-disabled]):not([aria-disabled="true"]),
 [data-slot="button"]:not(:disabled):not([data-disabled]),
+[data-slot="dropdown-menu-trigger"]:not(:disabled):not([data-disabled]),
+[data-slot="dropdown-menu-item"]:not([data-disabled]),
+[data-slot="dropdown-menu-sub-trigger"]:not([data-disabled]),
+[data-slot="dropdown-menu-checkbox-item"]:not([data-disabled]),
+[data-slot="dropdown-menu-radio-item"]:not([data-disabled]),
 input[type="button"]:not(:disabled),
 input[type="submit"]:not(:disabled),
 input[type="reset"]:not(:disabled) {
@@ -288,7 +297,13 @@ input[type="reset"]:not(:disabled) {
 button:disabled,
 [data-slot="button"]:disabled,
 [data-slot="button"][data-disabled],
-[role="button"][aria-disabled="true"] {
+[role="button"][aria-disabled="true"],
+[role="menuitem"][data-disabled],
+[role="menuitem"][aria-disabled="true"],
+[data-slot="dropdown-menu-item"][data-disabled],
+[data-slot="dropdown-menu-sub-trigger"][data-disabled],
+[data-slot="dropdown-menu-checkbox-item"][data-disabled],
+[data-slot="dropdown-menu-radio-item"][data-disabled] {
   cursor: not-allowed;
 }
 

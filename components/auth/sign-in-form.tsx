@@ -15,6 +15,7 @@ import { isEmailIdentifier } from "@/lib/api/auth"
 import {
   authClient,
   persistSession,
+  rememberPendingAuthMethod,
   syncLastUsedLoginMethodCookie,
 } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
@@ -36,6 +37,7 @@ import {
   type SignInFieldErrors,
 } from "./sign-in-schema"
 import { SocialAuthButton } from "./social-auth-button"
+import { LastUsedBadge } from "./last-used-badge"
 import { TurnstileField } from "./turnstile-field"
 
 function AuthDivider() {
@@ -81,6 +83,7 @@ function SignInForm() {
     if (pendingAction) return
 
     setPendingAction(provider)
+    rememberPendingAuthMethod(provider)
 
     try {
       const next = getSafeNextPath(searchParams.get("next"))
@@ -294,14 +297,17 @@ function SignInForm() {
           ) : null}
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          loading={pendingAction === "email"}
-          disabled={pendingAction !== null && pendingAction !== "email"}
-        >
-          Sign in
-        </Button>
+        <div className="relative min-w-0">
+          {lastUsed === "email" ? <LastUsedBadge /> : null}
+          <Button
+            type="submit"
+            className="w-full"
+            loading={pendingAction === "email"}
+            disabled={pendingAction !== null && pendingAction !== "email"}
+          >
+            Sign in
+          </Button>
+        </div>
       </form>
     </div>
   )

@@ -2,9 +2,11 @@
 
 export {
   authClient,
+  consumePendingAuthMethod,
   getLastUsedLoginMethod,
   getSession,
   isLastUsedLoginMethod,
+  rememberPendingAuthMethod,
   signIn,
   signOut,
   signUp,

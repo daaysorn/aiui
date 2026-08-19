@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import {
+  consumePendingAuthMethod,
   persistSession,
   resolveSessionTokens,
   stripOAuthTokensFromCurrentUrl,
@@ -52,8 +53,11 @@ function AuthCallback() {
 
         await persistSession(tokens)
 
-        const method = parseAuthMethod(searchParams.get("method"))
-        if (method && method !== "email") {
+        const method =
+          parseAuthMethod(searchParams.get("method")) ??
+          parseAuthMethod(consumePendingAuthMethod())
+
+        if (method) {
           syncLastUsedLoginMethodCookie(method)
         }
 

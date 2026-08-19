@@ -1174,7 +1174,7 @@ for navigation. On dashboard and auth, use Phosphor carets (`CaretLeftIcon`,
 | Theme hotkey   | Ignored when focus is in `input` / `textarea` / `select` / `contentEditable`               |
 | Social links   | `aria-label` on each link; tooltips as progressive enhancement                             |
 | External links | `rel="noopener noreferrer"` + `target="_blank"`                                            |
-| Link / button cursor | Enabled `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]` use `cursor: pointer`; disabled buttons use `cursor: not-allowed` |
+| Link / button / menu cursor | Enabled `a[href]`, `button`, `[role="button"]`, `[role="menuitem"]`, `[role="option"]`, `[data-slot="button"]`, and dropdown menu items use `cursor: pointer`; disabled controls use `cursor: not-allowed` |
 | Tooltips       | Radix primitives (keyboard / focus aware)                                                  |
 | Hydration      | `suppressHydrationWarning` on `<html>` for theme class                                     |
 
@@ -1415,7 +1415,7 @@ This design system is exposed to AI coding agents as a **project skill** so any 
 
 The skill carries the non-negotiable rules (tokens-only, font roles, breakpoint ladder incl. `xs`/`watch`, radius scale, `cn()` usage, component APIs, **no focus/active rings on buttons and fields**) plus a pre/post build checklist. This doc remains the deep reference the skill links into.
 
-Actionable links and enabled buttons always use the pointer cursor. `app/globals.css` owns the runtime default for `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]`, so this stays consistent across body links, cards, navigation, previews, and controls.
+Actionable links, enabled buttons, and dropdown/menu items always use the pointer cursor. `app/globals.css` owns the runtime default for `a[href]`, `button`, `[role="button"]`, `[role="menuitem"]`, `[role="option"]`, `[data-slot="button"]`, and dropdown item slots, so this stays consistent across body links, cards, navigation, menus, previews, and controls. Never set `cursor-default` on menu rows.
 
 ---
 

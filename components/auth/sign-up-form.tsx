@@ -11,7 +11,7 @@ import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useLastAuthMethod } from "@/hooks/use-last-auth-method"
-import { authClient } from "@/lib/api/client"
+import { authClient, rememberPendingAuthMethod } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
 import { setOtpResendCooldown } from "@/lib/auth/otp-resend-cooldown"
 import { setPendingVerifyEmail } from "@/lib/auth/pending-verify-email"
@@ -74,6 +74,7 @@ function SignUpForm() {
   async function handleSocialSignIn(provider: "google" | "github") {
     if (pendingAction) return
     setPendingAction(provider)
+    rememberPendingAuthMethod(provider)
     try {
       const next = getSafeNextPath(searchParams.get("next"))
       const callbackURL = buildAuthCallbackURL({

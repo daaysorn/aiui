@@ -14,6 +14,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Never add border lines (`border`, `border-*`, `divide-*`) to any element unless the user explicitly instructs it. Use background color (`bg-muted`, `bg-card`, etc.) or spacing to create visual separation instead.
 - Never use em dashes in user-facing content.
 - Long unbroken strings (tokens, URLs, env lines, hashes) must wrap: `min-w-0` with `break-all` / `overflow-wrap-anywhere`.
+- Links, enabled buttons, and dropdown/menu items use a pointer cursor. Never use `cursor-default` on menu rows.
 
 ## Learned Workspace Facts
 
@@ -25,5 +26,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - App Router page files stay thin. Compose page bodies in `views/`.
 - Buttons and form fields never use focus or active rings; focus is border only (`focus-visible:border-ring`). Never add `ring-*`, `focus-visible:ring-*`, `active:ring-*`, or `aria-invalid:ring-*` on buttons, inputs, textareas, selects, or OTP slots.
 - Loading buttons use `<Button loading>` (spinner + original label). Sonner toasts have no close (X) button.
-- Enabled buttons and links use a pointer cursor; disabled buttons use `cursor-not-allowed`. Enforced globally in `app/globals.css`.
+- Enabled buttons, links, and dropdown/menu items use a pointer cursor; disabled controls use `cursor-not-allowed`. Enforced globally in `app/globals.css`. Never use `cursor-default` on menu items.
 - Dashboard icons are Phosphor only (`@phosphor-icons/react`). Do not use lucide or react-icons on dashboard views or chrome.
