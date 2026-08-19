@@ -175,7 +175,6 @@ function ForgotPasswordForm() {
           />
           <Button
             type="submit"
-            variant={linkSent ? "outline" : "default"}
             className="w-full"
             loading={pending}
             disabled={linkSent && resendSecondsLeft > 0}
