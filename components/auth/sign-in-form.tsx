@@ -20,6 +20,7 @@ import {
 } from "@/lib/api/client"
 import { captchaHeaders } from "@/lib/api/fetch"
 import { envelopeCode } from "@/lib/api/envelope"
+import { setPendingResetEmail } from "@/lib/auth/pending-reset-email"
 import { setPendingVerifyEmail } from "@/lib/auth/pending-verify-email"
 import { LegalLink } from "@/components/auth/legal-link"
 import {
@@ -196,10 +197,12 @@ function SignInForm() {
     }
   }
 
-  const forgotHref =
-    identifier.trim() && isEmailIdentifier(identifier.trim())
-      ? `${siteRoutes.forgotPassword}?email=${encodeURIComponent(identifier.trim())}`
-      : siteRoutes.forgotPassword
+  function rememberResetEmail() {
+    const value = identifier.trim()
+    if (value && isEmailIdentifier(value)) {
+      setPendingResetEmail(value)
+    }
+  }
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-8">
@@ -263,7 +266,11 @@ function SignInForm() {
             <label htmlFor="password" className="text-sm font-medium">
               Password
             </label>
-            <LegalLink href={forgotHref} className="text-xs text-muted-foreground">
+            <LegalLink
+              href={siteRoutes.forgotPassword}
+              className="text-xs text-muted-foreground"
+              onClick={rememberResetEmail}
+            >
               Forgot password?
             </LegalLink>
           </div>

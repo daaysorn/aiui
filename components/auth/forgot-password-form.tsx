@@ -13,6 +13,11 @@ import {
   getPasswordResetResendAvailableAt,
   setPasswordResetResendCooldown,
 } from "@/lib/auth/otp-resend-cooldown"
+import {
+  clearPendingResetEmail,
+  getPendingResetEmail,
+  setPendingResetEmail,
+} from "@/lib/auth/pending-reset-email"
 import { authCopy, siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
@@ -21,8 +26,13 @@ import { TurnstileField } from "./turnstile-field"
 function ForgotPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [email, setEmail] = useState(() => searchParams.get("email")?.trim() ?? "")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<{
+    password?: string
+    confirmPassword?: string
+  }>({})
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [linkSent, setLinkSent] = useState(false)
   const [pending, setPending] = useState(false)
@@ -45,6 +55,22 @@ function ForgotPasswordForm() {
       toast.error("Reset link expired. Request a new one.")
     }
   }, [searchParams])
+
+  useEffect(() => {
+    const fromQuery = searchParams.get("email")?.trim()
+    if (fromQuery) {
+      setPendingResetEmail(fromQuery)
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete("email")
+      const query = params.toString()
+      router.replace(
+        query ? `${siteRoutes.forgotPassword}?${query}` : siteRoutes.forgotPassword
+      )
+    }
+
+    const stored = getPendingResetEmail() || fromQuery || ""
+    if (stored) setEmail(stored)
+  }, [router, searchParams])
 
   useEffect(() => {
     if (!email.trim()) return
@@ -92,6 +118,7 @@ function ForgotPasswordForm() {
     }
 
     toast.success("Reset link sent.")
+    setPendingResetEmail(email.trim())
     setResendAvailableAt(setPasswordResetResendCooldown(email.trim()))
     setNow(Date.now())
     setLinkSent(true)
@@ -100,6 +127,22 @@ function ForgotPasswordForm() {
   async function handleTokenReset(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending || !resetToken) return
+
+    const nextErrors: { password?: string; confirmPassword?: string } = {}
+    if (password.length < 8) {
+      nextErrors.password = "Password must be at least 8 characters."
+    }
+    if (!confirmPassword) {
+      nextErrors.confirmPassword = "Confirm your password."
+    } else if (password !== confirmPassword) {
+      nextErrors.confirmPassword = "Passwords do not match."
+    }
+    if (nextErrors.password || nextErrors.confirmPassword) {
+      setFieldErrors(nextErrors)
+      return
+    }
+
+    setFieldErrors({})
     setPending(true)
 
     const result = await resetPasswordWithToken({
@@ -115,6 +158,7 @@ function ForgotPasswordForm() {
     }
 
     toast.success("Password updated.")
+    clearPendingResetEmail()
     router.push(siteRoutes.signIn)
   }
 
@@ -123,6 +167,10 @@ function ForgotPasswordForm() {
     : linkSent
       ? "Check email for reset link."
       : "We email a reset link."
+  const canUpdatePassword =
+    password.length >= 8 &&
+    confirmPassword.length >= 8 &&
+    password === confirmPassword
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-8">
@@ -140,15 +188,67 @@ function ForgotPasswordForm() {
 
       {resetToken ? (
         <form className="space-y-4" onSubmit={handleTokenReset}>
-          <PasswordInput
-            showStrength
-            placeholder={authCopy.placeholders.resetPassword}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-          <Button type="submit" className="w-full" loading={pending}>
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">
+              Password
+            </label>
+            <PasswordInput
+              id="password"
+              showStrength
+              autoComplete="new-password"
+              placeholder={authCopy.placeholders.resetPassword}
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value)
+                if (fieldErrors.password) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    password: undefined,
+                  }))
+                }
+              }}
+              required
+              minLength={8}
+              aria-invalid={Boolean(fieldErrors.password)}
+            />
+            {fieldErrors.password ? (
+              <p className="text-xs text-destructive">{fieldErrors.password}</p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="confirmPassword" className="text-sm font-medium">
+              Confirm password
+            </label>
+            <PasswordInput
+              id="confirmPassword"
+              autoComplete="new-password"
+              placeholder={authCopy.placeholders.confirmPassword}
+              value={confirmPassword}
+              onChange={(event) => {
+                setConfirmPassword(event.target.value)
+                if (fieldErrors.confirmPassword) {
+                  setFieldErrors((current) => ({
+                    ...current,
+                    confirmPassword: undefined,
+                  }))
+                }
+              }}
+              required
+              minLength={8}
+              aria-invalid={Boolean(fieldErrors.confirmPassword)}
+            />
+            {fieldErrors.confirmPassword ? (
+              <p className="text-xs text-destructive">
+                {fieldErrors.confirmPassword}
+              </p>
+            ) : null}
+          </div>
+          <Button
+            type="submit"
+            className="w-full"
+            loading={pending}
+            disabled={!canUpdatePassword}
+          >
             Update password
           </Button>
         </form>

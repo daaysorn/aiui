@@ -15,6 +15,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Never use em dashes in user-facing content.
 - Long unbroken strings (tokens, URLs, env lines, hashes) must wrap: `min-w-0` with `break-all` / `overflow-wrap-anywhere`.
 - Links, enabled buttons, and dropdown/menu items use a pointer cursor. Never use `cursor-default` on menu rows.
+- Never put emails or other personal identifiers in URL query strings. Store them in `localStorage` for the auth flow and clear them after the flow finishes.
 
 ## Learned Workspace Facts
 
@@ -28,3 +29,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Loading buttons use `<Button loading>` (spinner + original label). Sonner toasts have no close (X) button.
 - Enabled buttons, links, and dropdown/menu items use a pointer cursor; disabled controls use `cursor-not-allowed`. Enforced globally in `app/globals.css`. Never use `cursor-default` on menu items.
 - Dashboard icons are Phosphor only (`@phosphor-icons/react`). Do not use lucide or react-icons on dashboard views or chrome.
+- Pending verify email lives in `lib/auth/pending-verify-email.ts`. Pending reset email lives in `lib/auth/pending-reset-email.ts`. If a legacy `?email=` query lands, copy it into storage and immediately `router.replace` the param away.
