@@ -1174,7 +1174,7 @@ for navigation. Use `react-icons` caret/chevron components (`PiCaretLeftBold`,
 | Theme hotkey   | Ignored when focus is in `input` / `textarea` / `select` / `contentEditable`               |
 | Social links   | `aria-label` on each link; tooltips as progressive enhancement                             |
 | External links | `rel="noopener noreferrer"` + `target="_blank"`                                            |
-| Link cursor    | Every `a[href]` uses `cursor: pointer`; never leave actionable links on the default cursor |
+| Link / button cursor | `a[href]`, enabled `button`, `[role="button"]`, and `[data-slot="button"]` use `cursor: pointer` |
 | Tooltips       | Radix primitives (keyboard / focus aware)                                                  |
 | Hydration      | `suppressHydrationWarning` on `<html>` for theme class                                     |
 
@@ -1415,9 +1415,7 @@ This design system is exposed to AI coding agents as a **project skill** so any 
 
 The skill carries the non-negotiable rules (tokens-only, font roles, breakpoint ladder incl. `xs`/`watch`, radius scale, `cn()` usage, component APIs, **no input rings**) plus a pre/post build checklist. This doc remains the deep reference the skill links into.
 
-Actionable links always use the pointer cursor. `app/globals.css` owns the
-runtime default through `a[href] { cursor: pointer; }`, so this behavior remains
-consistent across body links, cards, navigation, previews, and social links.
+Actionable links and enabled buttons always use the pointer cursor. `app/globals.css` owns the runtime default for `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]`, so this stays consistent across body links, cards, navigation, previews, and controls.
 
 ---
 

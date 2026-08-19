@@ -18,6 +18,7 @@ function Toaster({ ...props }: ToasterProps) {
         },
       }}
       {...props}
+      position="top-right"
       closeButton={false}
     />
   )

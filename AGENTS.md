@@ -22,3 +22,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - App Router page files stay thin. Compose page bodies in `views/`.
 - Inputs never use focus rings; focus is border only (`focus-visible:border-ring`). Buttons keep `ring-ring`.
 - Loading buttons use `<Button loading>` (spinner + original label). Sonner toasts have no close (X) button.
+- Links and enabled buttons use a pointer cursor. Enforced globally in `app/globals.css`.

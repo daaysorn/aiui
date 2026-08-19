@@ -97,7 +97,7 @@
   --shimmer-base: var(--muted-foreground);
   --shimmer-glint: color-mix(
     in oklch,
-    var(--foreground) 65%,
+    var(--foreground) 92%,
     var(--muted-foreground)
   );
 }
@@ -161,20 +161,20 @@
 
 @utility animate-text-shimmer {
   /* Glint is theme-aware (see --shimmer-glint) so it reads in light AND dark.
-     Wide, soft transition zones make the sweep feel gradual rather than sharp. */
+     A narrower peak makes the sweep more visible on the daaybot wordmark. */
   background-image: linear-gradient(
     90deg,
     var(--shimmer-base) 0%,
-    var(--shimmer-base) 25%,
-    var(--shimmer-glint) 50%,
-    var(--shimmer-base) 75%,
+    var(--shimmer-base) 38%,
+    var(--shimmer-glint) 48%,
+    var(--shimmer-glint) 52%,
+    var(--shimmer-base) 62%,
     var(--shimmer-base) 100%
   );
-  background-size: 200% auto;
+  background-size: 220% auto;
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
-  /* linear = constant speed (no mid-cycle acceleration or snap); slow + smooth. */
   animation: text-shimmer 6s linear infinite;
 }
 
@@ -243,13 +243,6 @@
   body {
     @apply bg-background text-foreground;
   }
-  button:not(:disabled),
-  [role="button"]:not(:disabled) {
-    cursor: pointer;
-  }
-  a[href] {
-    cursor: pointer;
-  }
   html {
     @apply font-sans;
   }
@@ -267,6 +260,17 @@
   pre {
     @apply font-mono;
   }
+}
+
+/* Links and enabled buttons always use a pointer cursor. */
+a[href],
+button:not(:disabled),
+[role="button"]:not(:disabled):not([aria-disabled="true"]),
+[data-slot="button"]:not(:disabled):not([data-disabled]),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled) {
+  cursor: pointer;
 }
 
 /* Inputs never show a focus ring. Buttons keep theirs. */
