@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { SidebarBotIcon } from "@/components/brand/sidebar-bot-icon"
 import {
   BuildingsIcon,
   DotsThreeIcon,
@@ -11,7 +12,6 @@ import {
   MagnifyingGlassIcon,
   PlugsIcon,
   PuzzlePieceIcon,
-  RobotIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -28,7 +28,7 @@ import { useChannels, useProjects, useRecentChats, useUserOverview } from "@/hoo
 import { cn } from "@/lib/utils"
 
 const primaryNav = [
-  { href: "/dashboard", label: "New bot", icon: RobotIcon, exact: true },
+  { href: "/dashboard", label: "New bot", icon: SidebarBotIcon, exact: true },
   { href: "/dashboard/search", label: "Search chat", icon: MagnifyingGlassIcon, exact: true },
   { href: "/dashboard/plugins", label: "Plugins", icon: PuzzlePieceIcon, exact: true },
   { href: "/dashboard/mcps", label: "MCPs", icon: PlugsIcon, exact: true },
@@ -37,18 +37,24 @@ const primaryNav = [
 function NavButton({
   href,
   label,
-  icon: Icon,
+  icon: IconComponent,
   isActive,
 }: {
   href: string
   label: string
-  icon?: Icon
+  icon?: Icon | typeof SidebarBotIcon
   isActive: boolean
 }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton isActive={isActive} render={<Link href={href} />}>
-        {Icon ? <Icon weight={isActive ? "fill" : "duotone"} /> : null}
+        {IconComponent ? (
+          IconComponent === SidebarBotIcon ? (
+            <SidebarBotIcon />
+          ) : (
+            <IconComponent weight={isActive ? "fill" : "duotone"} />
+          )
+        ) : null}
         <span>{label}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>

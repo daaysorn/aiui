@@ -1,104 +1,32 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
+import { MoonIcon, SunIcon } from "@phosphor-icons/react"
 
-import {
-  updateProfileAction,
-  type SettingsState,
-} from "@/app/(dashboard)/dashboard/settings/actions"
 import { DashboardSection } from "@/components/dashboard/dashboard-shell"
-import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useUserOverview } from "@/hooks/use-dashboard-query"
 import { useSoundNotifications } from "@/hooks/use-sound-notifications"
 import { playMoodCue } from "@/lib/chat-sounds"
-import { queryKeys } from "@/lib/query/keys"
 import { setSoundNotificationsEnabled } from "@/lib/sound-notifications"
 
 export function SettingsView() {
-  const { data: overview } = useUserOverview()
-  const queryClient = useQueryClient()
-  const [state, formAction, pending] = useActionState<SettingsState | null, FormData>(
-    updateProfileAction,
-    null
-  )
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const soundEnabled = useSoundNotifications()
-  const user = overview?.user
 
-  useEffect(() => {
-    if (!state?.message) return
-    void queryClient.invalidateQueries({ queryKey: queryKeys.overview })
-  }, [queryClient, state?.message])
+  useEffect(() => setMounted(true), [])
 
   function handleSoundChange(checked: boolean) {
     setSoundNotificationsEnabled(checked)
     if (checked) playMoodCue("complete")
   }
 
-  if (!user) {
-    return <DashboardSkeleton />
-  }
+  const isDark = mounted && resolvedTheme === "dark"
 
   return (
-    <DashboardSection
-      title="Settings"
-      description="Profile and sound notifications"
-    >
-      <form
-        action={formAction}
-        className="flex max-w-xl flex-col gap-4 rounded-xl bg-card p-6"
-      >
-        {state?.error ? (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {state.error}
-          </p>
-        ) : null}
-        {state?.message ? (
-          <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
-            {state.message}
-          </p>
-        ) : null}
-        <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="text-sm font-medium">
-            Email
-          </label>
-          <Input id="email" value={user.email} disabled />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="name" className="text-sm font-medium">
-            Name
-          </label>
-          <Input id="name" name="name" defaultValue={user.name} required />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="username" className="text-sm font-medium">
-            Username
-          </label>
-          <Input
-            id="username"
-            name="username"
-            defaultValue={user.username ?? ""}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="telephone" className="text-sm font-medium">
-            Phone
-          </label>
-          <Input
-            id="telephone"
-            name="telephone"
-            defaultValue={user.telephone ?? ""}
-          />
-        </div>
-        <Button type="submit" loading={pending}>
-          Save changes
-        </Button>
-      </form>
-
+    <DashboardSection title="Settings" description="Sound and appearance.">
       <div className="flex max-w-xl items-center justify-between gap-4 rounded-xl bg-muted p-6">
         <div className="flex min-w-0 flex-col gap-1">
           <Label htmlFor="sound-notifications">Sound notifications</Label>
@@ -108,6 +36,24 @@ export function SettingsView() {
           id="sound-notifications"
           checked={soundEnabled}
           onCheckedChange={handleSoundChange}
+        />
+      </div>
+      <div className="flex max-w-xl items-center justify-between gap-4 rounded-xl bg-muted p-6">
+        <div className="flex min-w-0 items-center gap-2">
+          {isDark ? (
+            <SunIcon className="size-4 shrink-0" weight="duotone" />
+          ) : (
+            <MoonIcon className="size-4 shrink-0" weight="duotone" />
+          )}
+          <div className="flex min-w-0 flex-col gap-1">
+            <Label htmlFor="dark-mode">Dark mode</Label>
+            <p className="text-sm text-muted-foreground">Press d to toggle</p>
+          </div>
+        </div>
+        <Switch
+          id="dark-mode"
+          checked={isDark}
+          onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
         />
       </div>
     </DashboardSection>

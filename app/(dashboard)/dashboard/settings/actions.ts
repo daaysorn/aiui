@@ -27,6 +27,7 @@ export async function updateProfileAction(
         telephone: telephone || undefined,
       },
     })
+    revalidatePath("/dashboard/account")
     revalidatePath("/dashboard/settings")
     return { message: "Profile updated." }
   } catch (error) {
