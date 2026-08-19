@@ -23,7 +23,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Dark is the default theme. Press `d` to toggle.
 - Static/content page OG images use PageLightSwiss via `createPageOgImage` (`lib/og-page.ts`). New routes should add `opengraph-image.tsx` and resolve preview URLs with `lib/og-path` / `localOpenGraphImageSrc`.
 - App Router page files stay thin. Compose page bodies in `views/`.
-- Inputs never use focus rings; focus is border only (`focus-visible:border-ring`). Buttons keep `ring-ring`.
+- Buttons and form fields never use focus or active rings; focus is border only (`focus-visible:border-ring`). Never add `ring-*`, `focus-visible:ring-*`, `active:ring-*`, or `aria-invalid:ring-*` on buttons, inputs, textareas, selects, or OTP slots.
 - Loading buttons use `<Button loading>` (spinner + original label). Sonner toasts have no close (X) button.
-- Links and enabled buttons use a pointer cursor. Enforced globally in `app/globals.css`.
+- Enabled buttons and links use a pointer cursor; disabled buttons use `cursor-not-allowed`. Enforced globally in `app/globals.css`.
 - Dashboard icons are Phosphor only (`@phosphor-icons/react`). Do not use lucide or react-icons on dashboard views or chrome.

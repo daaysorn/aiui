@@ -52,20 +52,20 @@
 | **Role-based type**               | Body = Geist, headings = Montserrat, code = JetBrains Mono                                                            |
 | **Composable UI**                 | shadcn + Radix primitives; Magic UI registry available (`@magicui`)                                                   |
 | **Performance is visual quality** | Server-render static composition; hydrate only interaction; avoid hidden work that makes motion or feedback feel slow |
-| **No input rings**                | Inputs, textareas, selects, and OTP slots never use `ring-*`. Focus is `border-ring` only; buttons keep focus rings |
+| **No focus/active rings**         | Buttons and form fields never use `ring-*` on focus or active. Focus is `border-ring` only |
 
 ---
 
 ## Form focus (rule)
 
-Inputs and input-like surfaces **do not use focus rings**. Never add `focus-visible:ring-*`, `ring-3`, or `aria-invalid:ring-*` to `input`, `textarea`, `select`, `[data-slot="input"]`, or `[data-slot="input-otp-slot"]`.
+Buttons and form fields **do not use focus or active rings**. Never add `focus-visible:ring-*`, `active:ring-*`, `ring-3`, or `aria-invalid:ring-*` to `button`, `[data-slot="button"]`, `input`, `textarea`, `select`, `[data-slot="input"]`, or `[data-slot="input-otp-slot"]`.
 
 | Surface                         | Focus                                                       | Invalid                         |
 | ------------------------------- | ----------------------------------------------------------- | ------------------------------- |
 | Input, textarea, select, OTP    | `focus-visible:border-ring` only (no `ring-*`)              | `aria-invalid:border-destructive` |
-| Button and other controls       | `focus-visible:border-ring` + `focus-visible:ring-3 ring-ring/50` | Keep existing ring if needed    |
+| Button                          | `focus-visible:border-ring` only (no `ring-*`)              | `aria-invalid:border-destructive` |
 
-Runtime lock lives in `app/globals.css`: those elements zero `--tw-ring-shadow`.
+Runtime lock lives in `app/globals.css`: those elements zero `--tw-ring-shadow` on focus and active.
 
 ---
 
@@ -1169,12 +1169,12 @@ for navigation. On dashboard and auth, use Phosphor carets (`CaretLeftIcon`,
 
 | Area           | Implementation                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------ |
-| Focus          | Buttons use `focus-visible:ring-3 ring-ring/50`. Inputs never use rings; focus is `border-ring` only |
-| Invalid forms  | `aria-invalid` → destructive **border** on inputs (no ring). Buttons may keep a destructive ring     |
+| Focus          | Buttons and form fields use `focus-visible:border-ring` only. Never use `ring-*` on focus or active |
+| Invalid forms  | `aria-invalid` → destructive **border** only (no ring) on buttons and inputs |
 | Theme hotkey   | Ignored when focus is in `input` / `textarea` / `select` / `contentEditable`               |
 | Social links   | `aria-label` on each link; tooltips as progressive enhancement                             |
 | External links | `rel="noopener noreferrer"` + `target="_blank"`                                            |
-| Link / button cursor | `a[href]`, enabled `button`, `[role="button"]`, and `[data-slot="button"]` use `cursor: pointer` |
+| Link / button cursor | Enabled `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]` use `cursor: pointer`; disabled buttons use `cursor: not-allowed` |
 | Tooltips       | Radix primitives (keyboard / focus aware)                                                  |
 | Hydration      | `suppressHydrationWarning` on `<html>` for theme class                                     |
 

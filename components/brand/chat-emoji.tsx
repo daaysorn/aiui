@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Lottie, type LottieHandle } from "lottie-react"
 
+import { chatEmojiData } from "@/components/brand/lottie-data"
 import { cn } from "@/lib/utils"
 
 export type ChatEmojiMood =
@@ -12,13 +13,7 @@ export type ChatEmojiMood =
   | "sad"
   | "confused"
 
-const CHAT_EMOJI_SOURCES: Record<ChatEmojiMood, string | readonly string[]> = {
-  default: "/lottie/wink.json",
-  thinking: ["/lottie/thinking.json", "/lottie/head-shake.json"],
-  searching: "/lottie/face-in-clouds.json",
-  sad: "/lottie/sad.json",
-  confused: "/lottie/confused.json",
-}
+const CHAT_EMOJI_SOURCES = chatEmojiData
 
 const CHAT_EMOJI_LABEL: Record<ChatEmojiMood, string> = {
   default: "daaybot",
@@ -46,7 +41,7 @@ function ChatEmoji({
 
   const sources = CHAT_EMOJI_SOURCES[mood]
   const playlist = Array.isArray(sources) ? sources : [sources]
-  const src = playlist[cycleIndex % playlist.length]
+  const animation = playlist[cycleIndex % playlist.length]
   const cycling = playlist.length > 1 && !reduceMotion
 
   useEffect(() => {
@@ -112,9 +107,9 @@ function ChatEmoji({
       onClick={togglePlayback}
     >
       <Lottie
-        key={`${mood}-${src}`}
+        key={`${mood}-${cycleIndex}`}
         as="span"
-        src={src}
+        src={animation}
         lottieRef={lottieRef}
         autoplay={!reduceMotion}
         loop={false}

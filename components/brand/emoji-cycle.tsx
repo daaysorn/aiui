@@ -5,19 +5,19 @@ import { Lottie } from "lottie-react"
 
 import { cn } from "@/lib/utils"
 
-const EMOJI_SOURCES = [
+const BRAND_CYCLE_SOURCES = [
   "/lottie/wink.json",
   "/lottie/head-shake.json",
   "/lottie/face-in-clouds.json",
 ] as const
 
-const GREETING_EMOJI_SOURCES = {
+const GREETING_SOURCES = {
   morning: "/lottie/greeting-morning.json",
   afternoon: "/lottie/greeting-afternoon.json",
   evening: "/lottie/greeting-evening.json",
 } as const
 
-export type GreetingPeriod = keyof typeof GREETING_EMOJI_SOURCES
+export type GreetingPeriod = keyof typeof GREETING_SOURCES
 
 export function greetingPeriod(now = new Date()): GreetingPeriod {
   const hour = now.getHours()
@@ -29,25 +29,43 @@ export function greetingPeriod(now = new Date()): GreetingPeriod {
 const HOLD_MS = 700
 const FADE_MS = 550
 
-type EmojiLayer = {
-  key: number
-  index: number
+const animationCache = new Map<string, Promise<object>>()
+
+function loadAnimation(src: string) {
+  let pending = animationCache.get(src)
+  if (!pending) {
+    pending = fetch(src).then((response) => {
+      if (!response.ok) {
+        throw new Error(`Could not load ${src}`)
+      }
+      return response.json() as Promise<object>
+    })
+    animationCache.set(src, pending)
+  }
+
+  return pending.then((data) => JSON.parse(JSON.stringify(data)) as object)
 }
 
 function BrandEmojiCycle({ className }: { className?: string }) {
   const [mounted, setMounted] = useState(false)
-  const [stack, setStack] = useState<EmojiLayer[]>([{ key: 0, index: 0 }])
-  const [activeKey, setActiveKey] = useState(0)
+  const [layer, setLayer] = useState<{ id: number; data: object } | null>(null)
+  const [previous, setPrevious] = useState<object | null>(null)
+  const [currentReady, setCurrentReady] = useState(false)
   const [reduceMotion, setReduceMotion] = useState(false)
-  const reduceMotionRef = useRef(false)
-  const activeKeyRef = useRef(0)
-  const cycleRef = useRef(0)
-  const nextKeyRef = useRef(1)
 
-  activeKeyRef.current = activeKey
+  const reduceMotionRef = useRef(false)
+  const indexRef = useRef(0)
+  const layerRef = useRef<{ id: number; data: object } | null>(null)
+  const previousRef = useRef<object | null>(null)
+  const cycleRef = useRef(0)
+  const nextIdRef = useRef(1)
+
+  layerRef.current = layer
+  previousRef.current = previous
 
   useEffect(() => {
     setMounted(true)
+    void Promise.all(BRAND_CYCLE_SOURCES.map((src) => loadAnimation(src)))
   }, [])
 
   useEffect(() => {
@@ -56,107 +74,80 @@ function BrandEmojiCycle({ className }: { className?: string }) {
       reduceMotionRef.current = media.matches
       setReduceMotion(media.matches)
     }
-
     sync()
     media.addEventListener("change", sync)
-
     return () => media.removeEventListener("change", sync)
   }, [])
 
-  function handleComplete() {
-    if (reduceMotionRef.current) return
+  useEffect(() => {
+    if (!mounted) return
+    void loadAnimation(BRAND_CYCLE_SOURCES[0]).then((data) => {
+      setLayer({ id: 0, data })
+      setCurrentReady(false)
+    })
+  }, [mounted])
 
-    const cycle = ++cycleRef.current
-    const nextKey = nextKeyRef.current++
-
-    window.setTimeout(() => {
-      if (cycle !== cycleRef.current) return
-
-      setStack((layers) => {
-        const current =
-          layers.find((layer) => layer.key === activeKeyRef.current) ??
-          layers[layers.length - 1]
-        const nextIndex = ((current?.index ?? 0) + 1) % EMOJI_SOURCES.length
-        return [...layers, { key: nextKey, index: nextIndex }]
-      })
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+  const subscriptions = useMemo(
+    () => ({
+      ready: () => {
+        setCurrentReady(true)
+        if (!previousRef.current) return
+        window.setTimeout(() => setPrevious(null), FADE_MS)
+      },
+      complete: () => {
+        if (reduceMotionRef.current) return
+        const cycle = ++cycleRef.current
+        window.setTimeout(() => {
           if (cycle !== cycleRef.current) return
-          setActiveKey(nextKey)
-        })
-      })
-
-      window.setTimeout(() => {
-        if (cycle !== cycleRef.current) return
-        setStack((layers) => layers.filter((layer) => layer.key === nextKey))
-      }, FADE_MS)
-    }, HOLD_MS)
-  }
+          const nextIndex = (indexRef.current + 1) % BRAND_CYCLE_SOURCES.length
+          void loadAnimation(BRAND_CYCLE_SOURCES[nextIndex]).then((data) => {
+            if (cycle !== cycleRef.current) return
+            setPrevious(layerRef.current?.data ?? null)
+            indexRef.current = nextIndex
+            setLayer({ id: nextIdRef.current++, data })
+            setCurrentReady(false)
+          })
+        }, HOLD_MS)
+      },
+    }),
+    []
+  )
 
   return (
     <span
       className={cn(
-        "relative size-7 shrink-0 overflow-hidden contain-[size]",
+        "pointer-events-none relative size-7 shrink-0 overflow-hidden contain-[size]",
         className
       )}
       aria-hidden
     >
-      {mounted
-        ? stack.map((layer) => (
-            <EmojiLayer
-              key={layer.key}
-              src={EMOJI_SOURCES[layer.index]}
-              active={layer.key === activeKey}
-              autoplay={!reduceMotion}
-              onComplete={
-                !reduceMotion && layer.key === activeKey
-                  ? handleComplete
-                  : undefined
-              }
-            />
-          ))
-        : null}
+      {previous ? (
+        <Lottie
+          as="span"
+          src={previous}
+          autoplay={false}
+          loop={false}
+          className={cn(
+            "absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent will-change-[opacity] transition-opacity duration-550 ease-in-out [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent",
+            currentReady ? "opacity-0" : "opacity-100"
+          )}
+        />
+      ) : null}
+      {layer ? (
+        <Lottie
+          key={layer.id}
+          as="span"
+          src={layer.data}
+          autoplay={!reduceMotion}
+          loop={false}
+          subscriptions={subscriptions}
+          className={cn(
+            "absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent will-change-[opacity] transition-opacity duration-550 ease-in-out [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent",
+            currentReady || !previous ? "opacity-100" : "opacity-0"
+          )}
+        />
+      ) : null}
     </span>
-  )
-}
-
-function EmojiLayer({
-  src,
-  active,
-  autoplay,
-  onComplete,
-}: {
-  src: string
-  active: boolean
-  autoplay: boolean
-  onComplete?: () => void
-}) {
-  const onCompleteRef = useRef(onComplete)
-  onCompleteRef.current = onComplete
-
-  const subscriptions = useMemo(
-    () =>
-      onComplete
-        ? {
-            complete: () => onCompleteRef.current?.(),
-          }
-        : undefined,
-    [Boolean(onComplete)]
-  )
-
-  return (
-    <Lottie
-      as="span"
-      src={src}
-      autoplay={autoplay}
-      loop={false}
-      subscriptions={subscriptions}
-      className={cn(
-        "absolute inset-0 block size-full min-h-0 min-w-0 will-change-[opacity] transition-opacity duration-550 ease-in-out [&_svg]:block [&_svg]:size-full",
-        active ? "opacity-100" : "opacity-0"
-      )}
-    />
   )
 }
 
@@ -187,10 +178,10 @@ function GreetingEmoji({ className }: { className?: string }) {
       {period ? (
         <Lottie
           as="span"
-          src={GREETING_EMOJI_SOURCES[period]}
+          src={GREETING_SOURCES[period]}
           autoplay={!reduceMotion}
-          loop={!reduceMotion}
-          className="absolute inset-0 block size-full min-h-0 min-w-0 [&_svg]:block [&_svg]:size-full"
+          loop={false}
+          className="absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent"
         />
       ) : null}
     </span>
