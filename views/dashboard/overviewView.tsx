@@ -296,9 +296,9 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
         {!hasMessages ? (
           /* Empty state — greeting + input centered together */
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-            <h1 className="flex items-center gap-3 font-heading text-3xl font-semibold tracking-tight xs:text-4xl">
-              {greet(firstName)}
-              <ChatEmoji mood={chatMood} className="size-10 xs:size-12" />
+            <h1 className="inline-flex max-w-full flex-row items-center justify-center gap-2.5 font-heading text-3xl font-semibold tracking-tight xs:text-4xl">
+              <ChatEmoji mood={chatMood} className="size-10 shrink-0 xs:size-12" />
+              <span className="min-w-0">{greet(firstName)}</span>
             </h1>
             <div className="w-full">
               <InputBar
@@ -354,13 +354,13 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                       ) : (
                         /* Assistant — plain text, left-aligned, mood face on latest */
                         <Message align="start">
-                          {msg.id === lastAssistant?.id && !streaming ? (
-                            <ChatEmoji mood={chatMood} className="size-8 self-start" />
-                          ) : null}
                           <MessageContent>
                             <Bubble variant="ghost" align="start">
-                              <BubbleContent className="text-sm leading-relaxed">
-                                {msg.content}
+                              <BubbleContent className="flex items-start gap-1.5 text-sm leading-relaxed">
+                                {msg.id === lastAssistant?.id && !streaming ? (
+                                  <ChatEmoji mood={chatMood} className="mt-0.5 size-6 shrink-0" />
+                                ) : null}
+                                <span className="min-w-0">{msg.content}</span>
                               </BubbleContent>
                             </Bubble>
                             <MessageFooter className="gap-1">
@@ -416,11 +416,13 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                   {streaming && (
                     <MessageScrollerItem messageId="__streaming__">
                       <Message align="start">
-                        <ChatEmoji mood={chatMood} className="size-8 self-start" />
                         <MessageContent>
                           <Bubble variant="ghost" align="start">
-                            <BubbleContent className="text-sm text-muted-foreground">
-                              {chatMood === "searching" ? "Searching…" : "Thinking…"}
+                            <BubbleContent className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                              <ChatEmoji mood={chatMood} className="size-6 shrink-0" />
+                              <span>
+                                {chatMood === "searching" ? "Searching…" : "Thinking…"}
+                              </span>
                             </BubbleContent>
                           </Bubble>
                         </MessageContent>

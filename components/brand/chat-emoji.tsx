@@ -104,7 +104,7 @@ function ChatEmoji({
     <button
       type="button"
       className={cn(
-        "relative size-8 shrink-0 overflow-hidden bg-transparent p-0 contain-[size]",
+        "relative isolate size-8 shrink-0 overflow-hidden bg-transparent p-0 contain-[strict]",
         className
       )}
       aria-label={paused ? `Play ${label}` : `Pause ${label}`}
