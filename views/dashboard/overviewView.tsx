@@ -1,19 +1,22 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import {
   ArrowClockwiseIcon,
-  ArrowUpIcon,
   CheckIcon,
   CopyIcon,
-  MicrophoneIcon,
-  PaperclipIcon,
-  SpinnerGapIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "@phosphor-icons/react"
 
 import { ChatEmoji, type ChatEmojiMood } from "@/components/brand/chat-emoji"
+import {
+  ChatComposer,
+  FileCard,
+  type ComposerFile,
+  type SentAttachment,
+} from "@/components/dashboard/chat-composer"
+import { AttachmentGroup } from "@/components/ui/attachment"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Button } from "@/components/ui/button"
 import { Marker, MarkerContent } from "@/components/ui/marker"
@@ -38,6 +41,7 @@ type ChatMessage = {
   role: "user" | "assistant"
   content: string
   timestamp: Date
+  attachments?: SentAttachment[]
 }
 
 function formatTime(date: Date) {
@@ -55,144 +59,6 @@ function isSearchQuery(text: string) {
   return /\b(search|look up|google|find online|web search)\b/i.test(text)
 }
 
-function InputBar({
-  value,
-  onChange,
-  onKeyDown,
-  onSend,
-  onTranscript,
-  disabled,
-  streaming,
-  placeholder = "Message Daaybot…",
-}: {
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
-  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
-  onSend: () => void
-  onTranscript: (text: string) => void
-  disabled?: boolean
-  streaming?: boolean
-  placeholder?: string
-}) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [listening, setListening] = useState(false)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
-
-  useEffect(() => {
-    const el = textareaRef.current
-    if (!el) return
-    el.style.height = "auto"
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
-  }, [value])
-
-  function handleAttach() {
-    fileInputRef.current?.click()
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    // Inject filename as a message placeholder — real upload wired later
-    onTranscript(`[Attached: ${file.name}]`)
-    e.target.value = ""
-  }
-
-  function handleVoice() {
-    const SpeechRecognition =
-      window.SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition
-
-    if (!SpeechRecognition) {
-      alert("Voice input is not supported in this browser.")
-      return
-    }
-
-    if (listening) {
-      recognitionRef.current?.stop()
-      setListening(false)
-      return
-    }
-
-    const recognition = new SpeechRecognition()
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.lang = "en-US"
-
-    recognition.onresult = (e) => {
-      const transcript = e.results[0]?.[0]?.transcript ?? ""
-      if (transcript) onTranscript(transcript)
-    }
-
-    recognition.onend = () => setListening(false)
-    recognition.onerror = () => setListening(false)
-
-    recognitionRef.current = recognition
-    recognition.start()
-    setListening(true)
-  }
-
-  return (
-    <div className="mx-auto flex w-full max-w-2xl items-end gap-1 rounded-2xl bg-muted px-3 py-2">
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-8 shrink-0 text-muted-foreground hover:text-foreground"
-        disabled={disabled}
-        onClick={handleAttach}
-        aria-label="Attach file"
-      >
-        <PaperclipIcon className="size-4" />
-      </Button>
-
-      <textarea
-        ref={textareaRef}
-        rows={1}
-        value={value}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        placeholder={listening ? "Listening…" : placeholder}
-        disabled={disabled}
-        className="max-h-50 min-h-6 flex-1 resize-none bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
-      />
-
-      <div className="flex shrink-0 items-center gap-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={listening ? "size-8 text-destructive" : "size-8 text-muted-foreground hover:text-foreground"}
-          disabled={disabled}
-          onClick={handleVoice}
-          aria-label={listening ? "Stop listening" : "Voice input"}
-        >
-          <MicrophoneIcon className="size-4" />
-        </Button>
-        <Button
-          size="icon"
-          className="size-8"
-          disabled={!value.trim() || disabled}
-          onClick={onSend}
-          aria-label="Send"
-        >
-          {streaming ? (
-            <SpinnerGapIcon className="size-4 animate-spin" />
-          ) : (
-            <ArrowUpIcon className="size-4" />
-          )}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 export function OverviewView({ overview }: { overview: UserOverview }) {
   const firstName = overview.user.name.split(" ")[0]
   const userInitials = overview.user.name
@@ -204,6 +70,7 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
+  const [attachments, setAttachments] = useState<ComposerFile[]>([])
   const [streaming, setStreaming] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [liked, setLiked] = useState<Record<string, "up" | "down" | null>>({})
@@ -241,20 +108,51 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
     setInput((prev) => (prev ? `${prev} ${text}` : text))
   }
 
+  function handleAddFiles(files: File[]) {
+    setAttachments((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ])
+  }
+
+  function handleRemoveFile(id: string) {
+    setAttachments((prev) => {
+      const next = prev.filter((item) => item.id !== id)
+      const removed = prev.find((item) => item.id === id)
+      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl)
+      return next
+    })
+  }
+
   function handleSend() {
     const trimmed = input.trim()
-    if (!trimmed || streaming) return
+    if ((!trimmed && attachments.length === 0) || streaming) return
+
+    const sentAttachments: SentAttachment[] = attachments.map((item) => ({
+      id: item.id,
+      name: item.file.name,
+      type: item.file.type,
+      previewUrl: item.previewUrl,
+    }))
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
       content: trimmed,
       timestamp: new Date(),
+      attachments: sentAttachments.length ? sentAttachments : undefined,
     }
 
     setMessages((prev) => [...prev, userMsg])
     setInput("")
+    setAttachments([])
     setStreaming(true)
+
+    const receivedLabel = trimmed || sentAttachments.map((item) => item.name).join(", ")
 
     setTimeout(() => {
       setMessages((prev) => [
@@ -262,7 +160,7 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: `I received: "${trimmed}". This is where Daaybot's response would stream in.`,
+          content: `I received: "${receivedLabel}". This is where Daaybot's response would stream in.`,
           timestamp: new Date(),
         },
       ])
@@ -304,12 +202,15 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
               <span className="min-w-0">{greet(firstName)}</span>
             </h1>
             <div className="w-full">
-              <InputBar
+              <ChatComposer
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onSend={handleSend}
                 onTranscript={handleTranscript}
+                attachments={attachments}
+                onAddFiles={handleAddFiles}
+                onRemoveFile={handleRemoveFile}
                 streaming={streaming}
               />
               <p className="mt-3 text-center text-xs text-muted-foreground/40">
@@ -337,9 +238,23 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                         /* User — pill bubble, right-aligned, no avatar */
                         <Message align="end">
                           <MessageContent>
-                            <Bubble variant="secondary" align="end">
-                              <BubbleContent>{msg.content}</BubbleContent>
-                            </Bubble>
+                            {msg.attachments?.length ? (
+                              <AttachmentGroup className="justify-end">
+                                {msg.attachments.map((file) => (
+                                  <FileCard
+                                    key={file.id}
+                                    name={file.name}
+                                    type={file.type}
+                                    previewUrl={file.previewUrl}
+                                  />
+                                ))}
+                              </AttachmentGroup>
+                            ) : null}
+                            {msg.content ? (
+                              <Bubble variant="secondary" align="end">
+                                <BubbleContent>{msg.content}</BubbleContent>
+                              </Bubble>
+                            ) : null}
                             <MessageFooter className="justify-end gap-1">
                               <Button
                                 variant="ghost" size="icon"
@@ -443,12 +358,15 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
       {/* Input bar — only shown when chat is active */}
       {hasMessages && (
         <div className="shrink-0 bg-background px-4 py-3">
-          <InputBar
+          <ChatComposer
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onSend={handleSend}
             onTranscript={handleTranscript}
+            attachments={attachments}
+            onAddFiles={handleAddFiles}
+            onRemoveFile={handleRemoveFile}
             streaming={streaming}
           />
           <p className="mt-2 text-center text-xs text-muted-foreground/40">
