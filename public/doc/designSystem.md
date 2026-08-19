@@ -1151,17 +1151,17 @@ Sonner toasts have **no close (X) button**. Do not pass `closeButton`. Dismiss b
 
 | Source                      | Where                           | Notes                                         |
 | --------------------------- | ------------------------------- | --------------------------------------------- |
-| `react-icons` (`fa6`, `ri`) | Footer socials                  | GitHub, Instagram, X, Envelope @ `size={20}`  |
-| shadcn `iconLibrary`        | `components.json` → `"lucide"`  | Default for newly generated shadcn components |
-| Magic UI registry           | `@magicui` in `components.json` | Optional animated components                  |
+| **Phosphor** (`@phosphor-icons/react`) | Dashboard, auth, sidebar chrome | **Required** for dashboard UI. Regular weight. |
+| `react-icons` (`fa6`, `ri`) | Footer socials / OAuth brands   | GitHub, Instagram, X, Envelope, Google        |
+| shadcn `iconLibrary`        | `components.json` → `"lucide"`  | Do not add lucide icons to dashboard files    |
 
 **Icon behavior in Button:** default SVG size `size-4` unless overridden; icons are non-interactive (`pointer-events-none`).
 
 **Icon behavior in Dock:** children centered in a `rounded-full` hit target that scales.
 
 **Navigation icon rule:** never use text glyphs such as `←`, `→`, `‹`, or `›`
-for navigation. Use `react-icons` caret/chevron components (`PiCaretLeftBold`,
-`PiCaretRightBold`) beside an accessible label.
+for navigation. On dashboard and auth, use Phosphor carets (`CaretLeftIcon`,
+`CaretRightIcon`) beside an accessible label.
 
 ---
 

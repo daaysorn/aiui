@@ -15,6 +15,7 @@
     "@base-ui/react": "^1.7.0",
     "@expo-google-fonts/montserrat": "^0.4.2",
     "@phosphor-icons/react": "^2.1.10",
+    "@shadcn/react": "^0.3.0",
     "@vercel/connect": "0.4.3",
     "ai": "^7.0.58",
     "better-auth": "^1.7.0",

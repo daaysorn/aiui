@@ -2,17 +2,69 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import type { ReactNode } from "react"
+import { useTheme } from "next-themes"
+import { useEffect, useState, type ReactNode } from "react"
+import {
+  FolderIcon,
+  GearIcon,
+  MoonIcon,
+  PlusIcon,
+  RobotIcon,
+  SignOutIcon,
+  SquaresFourIcon,
+  SunIcon,
+} from "@phosphor-icons/react"
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 import { clearSession } from "@/lib/api/client"
-import { cn } from "@/lib/utils"
 
 const navItems = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/projects", label: "Projects" },
-  { href: "/dashboard/settings", label: "Settings" },
-] as const
+  { href: "/dashboard", label: "Overview", icon: SquaresFourIcon, exact: true },
+  { href: "/dashboard/projects", label: "Projects", icon: FolderIcon, exact: false },
+  { href: "/dashboard/settings", label: "Settings", icon: GearIcon, exact: false },
+]
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  return (
+    <DropdownMenuItem
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+    >
+      {mounted && resolvedTheme === "dark" ? (
+        <SunIcon className="size-4" />
+      ) : (
+        <MoonIcon className="size-4" />
+      )}
+      {mounted && resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+    </DropdownMenuItem>
+  )
+}
 
 type DashboardShellProps = {
   userName: string
@@ -20,11 +72,7 @@ type DashboardShellProps = {
   children: ReactNode
 }
 
-export function DashboardShell({
-  userName,
-  userEmail,
-  children,
-}: DashboardShellProps) {
+export function DashboardShell({ userName, userEmail, children }: DashboardShellProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -34,80 +82,107 @@ export function DashboardShell({
     router.refresh()
   }
 
-  return (
-    <div className="flex min-h-svh min-w-0 bg-background">
-      <aside className="hidden w-60 shrink-0 border-r border-border bg-card/40 p-4 md:flex md:flex-col">
-        <div className="mb-8 space-y-1">
-          <Link href="/dashboard" className="font-heading text-base font-semibold">
-            daaybot
-          </Link>
-          <p className="text-xs text-muted-foreground">Builder dashboard</p>
-        </div>
-        <nav className="flex flex-1 flex-col gap-1">
-          {navItems.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href))
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm transition-colors",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-        <div className="mt-auto space-y-3 border-t border-border pt-4">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{userName}</p>
-            <p className="truncate text-xs text-muted-foreground">{userEmail}</p>
-          </div>
-          <Button variant="outline" size="sm" className="w-full" onClick={handleSignOut}>
-            Sign out
-          </Button>
-        </div>
-      </aside>
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border px-4 py-3 md:hidden">
-          <Link href="/dashboard" className="font-heading text-sm font-semibold">
-            daaybot
-          </Link>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            Sign out
-          </Button>
+  return (
+    <SidebarProvider>
+      <Sidebar variant="inset">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}>
+                <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <RobotIcon className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-heading font-semibold">daaybot</span>
+                  <span className="text-xs text-muted-foreground">Builder</span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+
+          <div className="px-2 pt-1">
+            <Button
+              size="sm"
+              className="w-full justify-start gap-2"
+              render={<Link href="/dashboard/projects/new" />}
+            >
+              <PlusIcon className="size-4" />
+              New project
+            </Button>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.map(({ href, label, icon: Icon, exact }) => {
+                  const active = exact ? pathname === href : pathname.startsWith(href)
+                  return (
+                    <SidebarMenuItem key={href}>
+                      <SidebarMenuButton isActive={active} render={<Link href={href} />}>
+                        <Icon />
+                        {label}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <SidebarMenuButton
+                      size="lg"
+                      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    />
+                  }
+                >
+                  <Avatar className="size-8 rounded-lg">
+                    <AvatarFallback className="rounded-lg text-xs">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+                    <span className="truncate text-sm font-medium">{userName}</span>
+                    <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="start" className="w-56">
+                  <ThemeToggle />
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => void handleSignOut()}>
+                    <SignOutIcon className="size-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      <SidebarInset>
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
         </header>
-        <nav className="flex gap-1 overflow-x-auto border-b border-border px-4 py-2 md:hidden">
-          {navItems.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href))
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "shrink-0 rounded-md px-3 py-1.5 text-xs",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground"
-                )}
-              >
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-        <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
-      </div>
-    </div>
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
 
@@ -123,9 +198,9 @@ export function DashboardSection({
   children: ReactNode
 }) {
   return (
-    <section className="mx-auto w-full max-w-5xl min-w-0 space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 space-y-1">
+    <section className="mx-auto w-full max-w-4xl min-w-0 flex flex-col gap-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 flex flex-col gap-1">
           <h1 className="font-heading text-2xl font-semibold tracking-tight">{title}</h1>
           {description ? (
             <p className="text-sm text-muted-foreground">{description}</p>
@@ -148,8 +223,8 @@ export function StatCard({
   hint?: string
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+    <div className="rounded-xl bg-muted p-5">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-2 font-heading text-2xl font-semibold">{value}</p>
       {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>

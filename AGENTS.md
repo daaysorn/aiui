@@ -10,6 +10,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Always write the brand name as lowercase `daaysorn`, including at the beginning of sentences.
 - Page Open Graph descriptions/subtitles must stay on one line (short; no multi-line marketing copy under the title).
 - Form/page subtitles (the muted helper text under a heading) must be 4-6 words max — no long marketing copy.
+- Never add border lines (`border`, `border-*`, `divide-*`) to any element unless the user explicitly instructs it. Use background color (`bg-muted`, `bg-card`, etc.) or spacing to create visual separation instead.
 - Never use em dashes in user-facing content.
 - Long unbroken strings (tokens, URLs, env lines, hashes) must wrap: `min-w-0` with `break-all` / `overflow-wrap-anywhere`.
 
@@ -24,3 +25,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Inputs never use focus rings; focus is border only (`focus-visible:border-ring`). Buttons keep `ring-ring`.
 - Loading buttons use `<Button loading>` (spinner + original label). Sonner toasts have no close (X) button.
 - Links and enabled buttons use a pointer cursor. Enforced globally in `app/globals.css`.
+- Dashboard icons are Phosphor only (`@phosphor-icons/react`). Do not use lucide or react-icons on dashboard views or chrome.
