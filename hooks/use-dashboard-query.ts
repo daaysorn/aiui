@@ -10,6 +10,7 @@ import {
   fetchRecentChats,
   fetchUserOverview,
 } from "@/lib/api/dashboard-data"
+import { getLocalChannel, listLocalChannels } from "@/lib/channels-store"
 import type { CatalogKind } from "@/lib/api/types"
 import { queryKeys } from "@/lib/query/keys"
 
@@ -54,5 +55,20 @@ export function useRecentChats() {
   return useQuery({
     queryKey: queryKeys.recentChats,
     queryFn: fetchRecentChats,
+  })
+}
+
+export function useChannels() {
+  return useQuery({
+    queryKey: queryKeys.channels,
+    queryFn: async () => listLocalChannels(),
+  })
+}
+
+export function useChannel(id: string) {
+  return useQuery({
+    queryKey: queryKeys.channel(id),
+    queryFn: async () => getLocalChannel(id),
+    enabled: Boolean(id),
   })
 }

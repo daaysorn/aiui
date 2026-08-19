@@ -5,32 +5,33 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 
 import {
-  createProjectAction,
-  type CreateProjectState,
-} from "@/app/(dashboard)/dashboard/projects/new/actions"
+  createOrganisationAction,
+  type CreateOrganisationState,
+} from "@/app/(dashboard)/dashboard/organisations/new/actions"
 import { DashboardSection } from "@/components/dashboard/dashboard-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { queryKeys } from "@/lib/query/keys"
 
-export function NewProjectView() {
+export function NewOrganisationView() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [state, formAction, pending] = useActionState<
-    CreateProjectState | null,
+    CreateOrganisationState | null,
     FormData
-  >(createProjectAction, null)
+  >(createOrganisationAction, null)
 
   useEffect(() => {
-    if (!state?.id) return
-    void queryClient.invalidateQueries({ queryKey: queryKeys.projects })
-    router.push(`/dashboard/projects/${state.id}`)
-  }, [queryClient, router, state?.id])
+    if (!state?.slug) return
+    void queryClient.invalidateQueries({ queryKey: queryKeys.overview })
+    router.push(`/dashboard/organisations/${state.slug}`)
+    router.refresh()
+  }, [queryClient, router, state?.slug])
 
   return (
     <DashboardSection
-      title="New project"
-      description="Name the new project."
+      title="New organisation"
+      description="Name the new organisation."
     >
       <form
         action={formAction}
@@ -43,27 +44,12 @@ export function NewProjectView() {
         ) : null}
         <div className="flex flex-col gap-2">
           <label htmlFor="name" className="text-sm font-medium">
-            Project name
+            Organisation name
           </label>
           <Input id="name" name="name" required maxLength={120} />
         </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="brief" className="text-sm font-medium">
-            Brief
-          </label>
-          <p className="text-xs text-muted-foreground">
-            Optional. A short project brief.
-          </p>
-          <textarea
-            id="brief"
-            name="brief"
-            rows={4}
-            maxLength={8000}
-            className="flex min-h-24 w-full min-w-0 rounded-md bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring"
-          />
-        </div>
         <Button type="submit" loading={pending}>
-          Create project
+          Create organisation
         </Button>
       </form>
     </DashboardSection>

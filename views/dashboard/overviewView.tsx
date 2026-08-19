@@ -17,7 +17,7 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
 import { ChatEmoji, type ChatEmojiMood } from "@/components/brand/chat-emoji"
-import { GreetingEmoji, greetingPeriod } from "@/components/brand/emoji-cycle"
+import { greetingPeriod } from "@/components/brand/emoji-cycle"
 import {
   ChatComposer,
   FileCard,
@@ -226,11 +226,8 @@ export function OverviewView({
           /* Empty state — greeting + input centered together */
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
             <h1 className="inline-flex max-w-full flex-row items-center justify-center gap-2 font-heading text-2xl font-semibold tracking-tight xs:text-3xl">
-              <GreetingEmoji className="size-8 xs:size-10" />
-              <span
-                className="min-w-0 motion-safe:animate-text-shimmer"
-                suppressHydrationWarning
-              >
+              <ChatEmoji className="size-8 xs:size-10" />
+              <span className="min-w-0" suppressHydrationWarning>
                 {greet(firstName)}
               </span>
             </h1>

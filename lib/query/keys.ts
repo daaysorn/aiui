@@ -5,4 +5,6 @@ export const queryKeys = {
   billingPlans: ["billing-plans"] as const,
   catalog: (kind: string) => ["catalog", kind] as const,
   recentChats: ["recent-chats"] as const,
+  channels: ["channels"] as const,
+  channel: (id: string) => ["channels", id] as const,
 }

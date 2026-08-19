@@ -17,7 +17,7 @@ export function ProjectsView() {
   return (
     <DashboardSection
       title="Projects"
-      description="Each project is a site notebook with instructions, skills, and chat threads."
+      description="Your saved site projects."
       action={
         <Button render={<Link href="/dashboard/projects/new" />}>
           New project

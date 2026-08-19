@@ -3,13 +3,15 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  BuildingsIcon,
   DotsThreeIcon,
-  FolderSimpleIcon,
+  FolderOpenIcon,
+  FolderPlusIcon,
+  HashIcon,
   MagnifyingGlassIcon,
-  NotePencilIcon,
   PlugsIcon,
-  PlusIcon,
   PuzzlePieceIcon,
+  RobotIcon,
   type Icon,
 } from "@phosphor-icons/react"
 
@@ -22,11 +24,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useProjects, useRecentChats } from "@/hooks/use-dashboard-query"
+import { useChannels, useProjects, useRecentChats, useUserOverview } from "@/hooks/use-dashboard-query"
 import { cn } from "@/lib/utils"
 
 const primaryNav = [
-  { href: "/dashboard", label: "New chat", icon: NotePencilIcon, exact: true },
+  { href: "/dashboard", label: "New bot", icon: RobotIcon, exact: true },
   { href: "/dashboard/search", label: "Search chat", icon: MagnifyingGlassIcon, exact: true },
   { href: "/dashboard/plugins", label: "Plugins", icon: PuzzlePieceIcon, exact: true },
   { href: "/dashboard/mcps", label: "MCPs", icon: PlugsIcon, exact: true },
@@ -55,9 +57,14 @@ function NavButton({
 
 function DashboardSidebar() {
   const pathname = usePathname()
+  const { data: overview } = useUserOverview()
   const { data: projects } = useProjects()
+  const { data: channels } = useChannels()
   const { data: recents } = useRecentChats()
 
+  const organisations = overview?.organizations ?? []
+  const hasOrganisations = organisations.length > 0
+  const recentOrganisations = organisations.slice(0, 3)
   const hasProjects = (projects ?? []).length > 0
   const recentProjects = (projects ?? [])
     .slice()
@@ -66,6 +73,8 @@ function DashboardSidebar() {
         new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
     )
     .slice(0, 3)
+  const hasChannels = (channels ?? []).length > 0
+  const recentChannels = (channels ?? []).slice(0, 3)
   const hasRecents = (recents ?? []).length > 0
 
   return (
@@ -86,17 +95,66 @@ function DashboardSidebar() {
                 }
               />
             ))}
+            {!hasOrganisations ? (
+              <NavButton
+                href="/dashboard/organisations/new"
+                label="New organisation"
+                icon={BuildingsIcon}
+                isActive={pathname === "/dashboard/organisations/new"}
+              />
+            ) : null}
             {!hasProjects ? (
               <NavButton
                 href="/dashboard/projects/new"
-                label="New Project"
-                icon={PlusIcon}
+                label="New project"
+                icon={FolderPlusIcon}
                 isActive={pathname === "/dashboard/projects/new"}
+              />
+            ) : null}
+            {!hasChannels ? (
+              <NavButton
+                href="/dashboard/channels/new"
+                label="New channel"
+                icon={HashIcon}
+                isActive={pathname === "/dashboard/channels/new"}
               />
             ) : null}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      {hasOrganisations ? (
+        <SidebarGroup>
+          <SidebarGroupLabel>Organisation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <NavButton
+                href="/dashboard/organisations/new"
+                label="New organisation"
+                icon={BuildingsIcon}
+                isActive={pathname === "/dashboard/organisations/new"}
+              />
+              {recentOrganisations.map((organisation) => (
+                <NavButton
+                  key={organisation.id}
+                  href={`/dashboard/organisations/${organisation.slug}`}
+                  label={organisation.name}
+                  icon={BuildingsIcon}
+                  isActive={
+                    pathname === `/dashboard/organisations/${organisation.slug}`
+                  }
+                />
+              ))}
+              <NavButton
+                href="/dashboard/organisations"
+                label="All organisations"
+                icon={DotsThreeIcon}
+                isActive={pathname === "/dashboard/organisations"}
+              />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ) : null}
 
       {hasProjects ? (
         <SidebarGroup>
@@ -105,8 +163,8 @@ function DashboardSidebar() {
             <SidebarMenu>
               <NavButton
                 href="/dashboard/projects/new"
-                label="New Project"
-                icon={PlusIcon}
+                label="New project"
+                icon={FolderPlusIcon}
                 isActive={pathname === "/dashboard/projects/new"}
               />
               {recentProjects.map((project) => (
@@ -114,7 +172,7 @@ function DashboardSidebar() {
                   key={project.id}
                   href={`/dashboard/projects/${project.id}`}
                   label={project.name}
-                  icon={FolderSimpleIcon}
+                  icon={FolderOpenIcon}
                   isActive={pathname === `/dashboard/projects/${project.id}`}
                 />
               ))}
@@ -123,6 +181,37 @@ function DashboardSidebar() {
                 label="All projects"
                 icon={DotsThreeIcon}
                 isActive={pathname === "/dashboard/projects"}
+              />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ) : null}
+
+      {hasChannels ? (
+        <SidebarGroup>
+          <SidebarGroupLabel>Channel</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <NavButton
+                href="/dashboard/channels/new"
+                label="New channel"
+                icon={HashIcon}
+                isActive={pathname === "/dashboard/channels/new"}
+              />
+              {recentChannels.map((channel) => (
+                <NavButton
+                  key={channel.id}
+                  href={`/dashboard/channels/${channel.id}`}
+                  label={channel.name}
+                  icon={HashIcon}
+                  isActive={pathname === `/dashboard/channels/${channel.id}`}
+                />
+              ))}
+              <NavButton
+                href="/dashboard/channels"
+                label="All channels"
+                icon={DotsThreeIcon}
+                isActive={pathname === "/dashboard/channels"}
               />
             </SidebarMenu>
           </SidebarGroupContent>
