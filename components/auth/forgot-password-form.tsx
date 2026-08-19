@@ -26,6 +26,7 @@ function ForgotPasswordForm() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [linkSent, setLinkSent] = useState(false)
   const [pending, setPending] = useState(false)
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0)
   const [resendAvailableAt, setResendAvailableAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
   const resendSecondsLeft = Math.max(
@@ -68,7 +69,7 @@ function ForgotPasswordForm() {
 
   async function handleRequestLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (pending) return
+    if (pending || (linkSent && resendSecondsLeft > 0)) return
     if (!captchaToken) {
       toast.error("Complete the Turnstile check to continue.")
       return
@@ -82,6 +83,8 @@ function ForgotPasswordForm() {
       captchaToken
     )
     setPending(false)
+    setCaptchaToken(null)
+    setTurnstileResetKey((key) => key + 1)
 
     if (!result.ok) {
       toast.error(result.envelope.message || "Could not send reset link.")
@@ -149,37 +152,39 @@ function ForgotPasswordForm() {
             Update password
           </Button>
         </form>
-      ) : linkSent ? (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            If an account exists for{" "}
-            <span className="break-all font-medium text-foreground">{email}</span>,
-            open the link in that email to choose a new password.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={resendSecondsLeft > 0}
-            onClick={() => setLinkSent(false)}
-          >
-            {resendSecondsLeft > 0
-              ? `Send another in ${resendSecondsLeft}s`
-              : "Send another link"}
-          </Button>
-        </div>
       ) : (
         <form className="space-y-4" onSubmit={handleRequestLink}>
-          <Input
-            type="email"
-            placeholder={authCopy.placeholders.email}
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
+          {linkSent ? (
+            <p className="text-sm text-muted-foreground">
+              If an account exists for{" "}
+              <span className="break-all font-medium text-foreground">{email}</span>,
+              open the link in that email to choose a new password.
+            </p>
+          ) : (
+            <Input
+              type="email"
+              placeholder={authCopy.placeholders.email}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          )}
+          <TurnstileField
+            resetKey={turnstileResetKey}
+            onChange={setCaptchaToken}
           />
-          <TurnstileField onChange={setCaptchaToken} />
-          <Button type="submit" className="w-full" loading={pending}>
-            Email reset link
+          <Button
+            type="submit"
+            variant={linkSent ? "outline" : "default"}
+            className="w-full"
+            loading={pending}
+            disabled={linkSent && resendSecondsLeft > 0}
+          >
+            {linkSent
+              ? resendSecondsLeft > 0
+                ? `Send another in ${resendSecondsLeft}s`
+                : "Send another link"
+              : "Email reset link"}
           </Button>
         </form>
       )}

@@ -7,6 +7,7 @@ import { getTurnstileSiteKey } from "@/lib/site"
 
 type TurnstileFieldProps = {
   onChange: (token: string | null) => void
+  resetKey?: number
 }
 
 type TurnstileApi = {
@@ -21,6 +22,7 @@ type TurnstileApi = {
       "expired-callback"?: () => void
     }
   ) => string
+  reset: (widgetId: string) => void
   remove: (widgetId: string) => void
 }
 
@@ -77,7 +79,7 @@ function loadTurnstileScript(): Promise<TurnstileApi> {
   })
 }
 
-function TurnstileField({ onChange }: TurnstileFieldProps) {
+function TurnstileField({ onChange, resetKey = 0 }: TurnstileFieldProps) {
   const { resolvedTheme } = useTheme()
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -87,6 +89,7 @@ function TurnstileField({ onChange }: TurnstileFieldProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | undefined>(undefined)
   const onChangeRef = useRef(onChange)
+  const lastResetKeyRef = useRef(resetKey)
   const turnstileTheme = resolvedTheme === "light" ? "light" : "dark"
 
   useEffect(() => {
@@ -139,6 +142,14 @@ function TurnstileField({ onChange }: TurnstileFieldProps) {
       onChangeRef.current(null)
     }
   }, [mounted, turnstileTheme])
+
+  useEffect(() => {
+    if (lastResetKeyRef.current === resetKey) return
+    lastResetKeyRef.current = resetKey
+    if (!widgetIdRef.current || !window.turnstile) return
+    window.turnstile.reset(widgetIdRef.current)
+    onChangeRef.current(null)
+  }, [resetKey])
 
   return <div ref={containerRef} className="w-full min-w-0" />
 }
