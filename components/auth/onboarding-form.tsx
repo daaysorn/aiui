@@ -93,7 +93,7 @@ function OnboardingForm() {
             id="telephone"
             name="telephone"
             value={phone}
-            onChange={setPhone}
+            onChange={(value) => setPhone(value ?? "")}
             invalid={phoneStatus === "taken"}
           >
             {phoneStatus !== "idle" && (

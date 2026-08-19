@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { CaretLeftIcon } from "@phosphor-icons/react"
 

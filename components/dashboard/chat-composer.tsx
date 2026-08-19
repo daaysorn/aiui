@@ -310,9 +310,7 @@ function ChatComposer({
 
   function handleVoice() {
     const SpeechRecognition =
-      window.SpeechRecognition ??
-      (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition })
-        .webkitSpeechRecognition
+      window.SpeechRecognition ?? window.webkitSpeechRecognition
 
     if (!SpeechRecognition) {
       alert("Voice input is not supported in this browser.")

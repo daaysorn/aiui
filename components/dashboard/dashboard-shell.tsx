@@ -235,7 +235,7 @@ export function DashboardSection({
   title: string
   description?: string
   action?: ReactNode
-  children: ReactNode
+  children?: ReactNode
 }) {
   return (
     <section className="mx-auto w-full max-w-4xl min-w-0 flex flex-col gap-6">

@@ -81,7 +81,8 @@ function DashboardSidebar() {
     .slice(0, 3)
   const hasChannels = (channels ?? []).length > 0
   const recentChannels = (channels ?? []).slice(0, 3)
-  const hasRecents = (recents ?? []).length > 0
+  const recentChats = recents ?? []
+  const hasRecents = recentChats.length > 0
 
   return (
     <SidebarContent className="overflow-hidden">
@@ -235,7 +236,7 @@ function DashboardSidebar() {
               )}
             >
               <SidebarMenu>
-                {recents.map((chat) => (
+                {recentChats.map((chat) => (
                   <NavButton
                     key={chat.id}
                     href={`/dashboard/projects/${chat.projectId}`}
