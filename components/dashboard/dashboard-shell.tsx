@@ -7,7 +7,6 @@ import { useEffect, useState, type ReactNode } from "react"
 import {
   FolderIcon,
   GearIcon,
-  LightningIcon,
   MoonIcon,
   PlusIcon,
   RobotIcon,
@@ -118,12 +117,11 @@ export function DashboardShell({
     }
   }
 
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
+  const nameParts = userName.trim().split(/\s+/).filter(Boolean)
+  const initials =
+    nameParts.length >= 2
+      ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase()
+      : userName.slice(0, 2).toUpperCase()
 
   return (
     <SidebarProvider>
@@ -177,58 +175,43 @@ export function DashboardShell({
         </SidebarContent>
 
         <SidebarFooter>
-          {showUpgrade ? (
-            <Button
-              size="sm"
-              className="w-full justify-start gap-2"
-              loading={upgrading}
-              onClick={() => void handleUpgrade()}
-            >
-              {upgrading ? null : <LightningIcon className="size-4" />}
-              Upgrade
-            </Button>
-          ) : null}
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <SidebarMenuButton
-                      size="lg"
-                      className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    />
-                  }
-                >
-                  <Avatar className="size-8 rounded-lg after:rounded-lg">
-                    {userImage ? (
-                      <AvatarImage
-                        src={userImage}
-                        alt={userName}
-                        className="rounded-lg"
-                      />
-                    ) : null}
-                    <AvatarFallback className="rounded-lg text-xs">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex min-w-0 flex-col gap-0.5 leading-none">
-                    <span className="truncate text-sm font-medium">{userName}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {planName} · {formatCreditBalance(creditBalance)} credits
-                    </span>
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="start" className="w-56">
-                  <ThemeToggle />
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => void handleSignOut()}>
-                    <SignOutIcon className="size-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <div className="flex min-w-0 items-center gap-2 rounded-lg p-1.5 outline-solid outline-1 outline-transparent transition-colors hover:bg-sidebar-accent hover:outline-border has-data-open:bg-sidebar-accent has-data-open:outline-border">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 overflow-hidden text-left outline-none">
+                <Avatar className="size-8">
+                  {userImage ? (
+                    <AvatarImage src={userImage} alt={userName} />
+                  ) : null}
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="flex w-0 min-w-0 flex-1 flex-col gap-0.5 leading-none">
+                  <span className="truncate text-sm font-semibold">{userName}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {planName} · {formatCreditBalance(creditBalance)} credits
+                  </span>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-56">
+                <ThemeToggle />
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void handleSignOut()}>
+                  <SignOutIcon className="size-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {showUpgrade ? (
+              <Button
+                variant="ghost"
+                size="xs"
+                className="shrink-0 rounded-full px-3 text-foreground outline-solid outline-1 outline-border hover:bg-transparent hover:text-foreground active:translate-y-0"
+                loading={upgrading}
+                onClick={() => void handleUpgrade()}
+              >
+                Upgrade
+              </Button>
+            ) : null}
+          </div>
         </SidebarFooter>
       </Sidebar>
 
