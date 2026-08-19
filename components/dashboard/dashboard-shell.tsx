@@ -1,14 +1,17 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useTheme } from "next-themes"
 import { useEffect, useState, type ReactNode } from "react"
+import { useTheme } from "next-themes"
 import {
+  CaretRightIcon,
+  CreditCardIcon,
+  DesktopIcon,
   GearIcon,
   MoonIcon,
   SignOutIcon,
   SunIcon,
+  UserCircleIcon,
 } from "@phosphor-icons/react"
 
 import { AuthBrand } from "@/components/auth/auth-brand"
@@ -32,44 +35,62 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { clearSession } from "@/lib/api/client"
+import { cn } from "@/lib/utils"
 
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme()
+const themeOptions = [
+  { value: "light", label: "Light", icon: SunIcon },
+  { value: "dark", label: "Dark", icon: MoonIcon },
+  { value: "system", label: "System", icon: DesktopIcon },
+] as const
+
+function ThemeToggleRow() {
+  const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+  const current = mounted ? theme : undefined
 
   return (
-    <DropdownMenuItem
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+    <div
+      className="flex gap-1 rounded-xl bg-muted p-1"
+      onPointerDown={(event) => event.preventDefault()}
     >
-      {mounted && resolvedTheme === "dark" ? (
-        <SunIcon className="size-4" weight="duotone" />
-      ) : (
-        <MoonIcon className="size-4" weight="duotone" />
-      )}
-      {mounted && resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
-    </DropdownMenuItem>
+      {themeOptions.map((option) => {
+        const Icon = option.icon
+        const active = current === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-label={option.label}
+            aria-pressed={active}
+            className={cn(
+              "flex h-8 flex-1 cursor-pointer items-center justify-center rounded-lg text-muted-foreground",
+              active && "bg-background text-foreground"
+            )}
+            onClick={() => setTheme(option.value)}
+          >
+            <Icon className="size-4" weight={active ? "fill" : "duotone"} />
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
 type DashboardShellProps = {
   userName: string
+  userHandle: string
   userImage: string | null
   planName: string
-  creditBalance: number
   showUpgrade?: boolean
   children: ReactNode
 }
 
-function formatCreditBalance(balance: number) {
-  return new Intl.NumberFormat("en-US").format(balance)
-}
-
 export function DashboardShell({
   userName,
+  userHandle,
   userImage,
   planName,
-  creditBalance,
   showUpgrade = false,
   children,
 }: DashboardShellProps) {
@@ -108,22 +129,54 @@ export function DashboardShell({
                   <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex w-0 min-w-0 flex-1 flex-col gap-0.5 leading-none">
-                  <span className="truncate text-sm font-semibold">{userName}</span>
+                  <span className="truncate text-sm font-semibold">{userHandle}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {planName} · {formatCreditBalance(creditBalance)} credits
+                    {planName}
                   </span>
                 </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" align="start" className="w-56">
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                sideOffset={8}
+                className="w-56 rounded-2xl p-1.5"
+              >
+                <DropdownMenuItem
+                  className="gap-3 rounded-xl py-2"
+                  onClick={() => router.push("/dashboard/account")}
+                >
+                  <Avatar className="size-8 overflow-hidden">
+                    <AvatarImage src={userImage ?? undefined} alt={userName} />
+                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5 leading-none">
+                    <span className="truncate font-semibold">{userHandle}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {planName}
+                    </span>
+                  </div>
+                  <CaretRightIcon className="ml-auto size-4" weight="bold" />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/dashboard/account")}>
+                  <UserCircleIcon weight="duotone" />
+                  Account
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
+                  <CreditCardIcon weight="duotone" />
+                  Billing
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
                   <GearIcon weight="duotone" />
                   Settings
                 </DropdownMenuItem>
-                <ThemeToggle />
+                <div className="px-1 py-1.5">
+                  <ThemeToggleRow />
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => void handleSignOut()}>
                   <SignOutIcon weight="duotone" />
-                  Sign out
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
