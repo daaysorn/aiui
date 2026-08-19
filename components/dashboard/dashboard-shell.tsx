@@ -135,10 +135,8 @@ export function DashboardShell({
           <div className="flex min-w-0 items-center gap-2 rounded-lg p-1.5 outline-solid outline-1 outline-transparent transition-colors hover:bg-sidebar-accent hover:outline-border has-data-open:bg-sidebar-accent has-data-open:outline-border">
             <DropdownMenu>
               <DropdownMenuTrigger className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 overflow-hidden text-left outline-none">
-                <Avatar className="size-8">
-                  {userImage ? (
-                    <AvatarImage src={userImage} alt={userName} />
-                  ) : null}
+                <Avatar className="size-8 overflow-hidden">
+                  <AvatarImage src={userImage ?? undefined} alt={userName} />
                   <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex w-0 min-w-0 flex-1 flex-col gap-0.5 leading-none">

@@ -25,14 +25,35 @@ function Avatar({
   )
 }
 
-function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
+function AvatarImage({
+  className,
+  src,
+  onError,
+  ...props
+}: React.ComponentProps<"img">) {
+  const [failed, setFailed] = React.useState(false)
+
+  React.useEffect(() => {
+    setFailed(false)
+  }, [src])
+
+  if (!src || failed) {
+    return null
+  }
+
   return (
-    <AvatarPrimitive.Image
+    <img
       data-slot="avatar-image"
+      src={src}
+      referrerPolicy="no-referrer"
       className={cn(
-        "aspect-square size-full rounded-full object-cover",
+        "relative z-[1] aspect-square size-full rounded-full object-cover",
         className
       )}
+      onError={(event) => {
+        setFailed(true)
+        onError?.(event)
+      }}
       {...props}
     />
   )
