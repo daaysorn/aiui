@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import type { ReactNode } from "react"
 
+import { DashboardQueryProvider } from "@/components/dashboard/query-provider"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { isFreePlan } from "@/lib/billing"
 import { getAccessToken, getUserOverview, needsOnboarding } from "@/lib/session"
@@ -32,14 +33,16 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell
-      userName={user.name}
-      userImage={user.image}
-      planName={billing.plan?.name ?? "Free"}
-      creditBalance={billing.credits.balance}
-      showUpgrade={isFreePlan(billing.plan)}
-    >
-      {children}
-    </DashboardShell>
+    <DashboardQueryProvider overview={overview}>
+      <DashboardShell
+        userName={user.name}
+        userImage={user.image}
+        planName={billing.plan?.name ?? "Free"}
+        creditBalance={billing.credits.balance}
+        showUpgrade={isFreePlan(billing.plan)}
+      >
+        {children}
+      </DashboardShell>
+    </DashboardQueryProvider>
   )
 }

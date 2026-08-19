@@ -1,10 +1,19 @@
+"use client"
+
 import Link from "next/link"
 
 import { DashboardSection } from "@/components/dashboard/dashboard-shell"
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { Button } from "@/components/ui/button"
-import type { Project } from "@/lib/api/types"
+import { useProjects } from "@/hooks/use-dashboard-query"
 
-export function ProjectsView({ projects }: { projects: Project[] }) {
+export function ProjectsView() {
+  const { data: projects, isPending } = useProjects()
+
+  if (isPending || !projects) {
+    return <DashboardSkeleton />
+  }
+
   return (
     <DashboardSection
       title="Projects"
@@ -16,7 +25,7 @@ export function ProjectsView({ projects }: { projects: Project[] }) {
       }
     >
       {projects.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
+        <div className="rounded-xl bg-muted p-8 text-center">
           <p className="text-sm text-muted-foreground">No projects yet.</p>
           <Button className="mt-4" render={<Link href="/dashboard/projects/new" />}>
             Create your first project
@@ -28,7 +37,7 @@ export function ProjectsView({ projects }: { projects: Project[] }) {
             <li key={project.id}>
               <Link
                 href={`/dashboard/projects/${project.id}`}
-                className="block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/40"
+                className="block rounded-xl bg-card p-4 transition-colors hover:bg-accent/40"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

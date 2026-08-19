@@ -1,31 +1,46 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import {
   updateProfileAction,
   type SettingsState,
 } from "@/app/(dashboard)/dashboard/settings/actions"
 import { DashboardSection } from "@/components/dashboard/dashboard-shell"
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { useUserOverview } from "@/hooks/use-dashboard-query"
 import { useSoundNotifications } from "@/hooks/use-sound-notifications"
-import type { SessionUser } from "@/lib/api/types"
 import { playMoodCue } from "@/lib/chat-sounds"
+import { queryKeys } from "@/lib/query/keys"
 import { setSoundNotificationsEnabled } from "@/lib/sound-notifications"
 
-export function SettingsView({ user }: { user: SessionUser }) {
+export function SettingsView() {
+  const { data: overview } = useUserOverview()
+  const queryClient = useQueryClient()
   const [state, formAction, pending] = useActionState<SettingsState | null, FormData>(
     updateProfileAction,
     null
   )
   const soundEnabled = useSoundNotifications()
+  const user = overview?.user
+
+  useEffect(() => {
+    if (!state?.message) return
+    void queryClient.invalidateQueries({ queryKey: queryKeys.overview })
+  }, [queryClient, state?.message])
 
   function handleSoundChange(checked: boolean) {
     setSoundNotificationsEnabled(checked)
     if (checked) playMoodCue("complete")
+  }
+
+  if (!user) {
+    return <DashboardSkeleton />
   }
 
   return (

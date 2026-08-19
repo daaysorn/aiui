@@ -9,6 +9,18 @@ export function getPublicSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL?.trim() || DEFAULT_SITE_URL
 }
 
+export function chatSuggestionsEnabled() {
+  const value = (
+    process.env.NEXT_PUBLIC_CHAT_SUGGESTIONS ??
+    process.env.CHAT_SUGGESTIONS ??
+    ""
+  )
+    .trim()
+    .toLowerCase()
+
+  return value === "1" || value === "true" || value === "yes"
+}
+
 /** Browser and auth client hit same-origin `/v1` via Next rewrites. */
 export function getAuthBaseUrl(): string {
   if (typeof window !== "undefined") {

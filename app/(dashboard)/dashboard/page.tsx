@@ -1,13 +1,6 @@
-import { redirect } from "next/navigation"
-
-import { getUserOverview } from "@/lib/session"
+import { chatSuggestionsEnabled } from "@/lib/env"
 import { OverviewView } from "@/views/dashboard/overviewView"
 
-export default async function DashboardPage() {
-  const overview = await getUserOverview()
-  if (!overview) {
-    redirect("/sign-in")
-  }
-
-  return <OverviewView overview={overview} />
+export default function DashboardPage() {
+  return <OverviewView showSuggestions={chatSuggestionsEnabled()} />
 }

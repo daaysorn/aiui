@@ -1,6 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "next/navigation"
 
 import {
   createProjectAction,
@@ -9,12 +11,21 @@ import {
 import { DashboardSection } from "@/components/dashboard/dashboard-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { queryKeys } from "@/lib/query/keys"
 
 export function NewProjectView() {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const [state, formAction, pending] = useActionState<
     CreateProjectState | null,
     FormData
   >(createProjectAction, null)
+
+  useEffect(() => {
+    if (!state?.id) return
+    void queryClient.invalidateQueries({ queryKey: queryKeys.projects })
+    router.push(`/dashboard/projects/${state.id}`)
+  }, [queryClient, router, state?.id])
 
   return (
     <DashboardSection
@@ -23,20 +34,20 @@ export function NewProjectView() {
     >
       <form
         action={formAction}
-        className="max-w-xl space-y-4 rounded-xl border border-border bg-card p-6"
+        className="max-w-xl flex flex-col gap-4 rounded-xl bg-card p-6"
       >
         {state?.error ? (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {state.error}
           </p>
         ) : null}
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <label htmlFor="name" className="text-sm font-medium">
             Project name
           </label>
           <Input id="name" name="name" required maxLength={120} />
         </div>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <label htmlFor="brief" className="text-sm font-medium">
             Brief
           </label>
@@ -48,7 +59,7 @@ export function NewProjectView() {
             name="brief"
             rows={4}
             maxLength={8000}
-            className="flex min-h-24 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:border-ring"
+            className="flex min-h-24 w-full min-w-0 rounded-md bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring"
           />
         </div>
         <Button type="submit" loading={pending}>

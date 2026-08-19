@@ -1,13 +1,12 @@
 "use server"
 
-import { redirect } from "next/navigation"
-
 import { ApiRequestError } from "@/lib/api/fetch"
 import { serverApiRequest } from "@/lib/api/server-fetch"
 import type { Project } from "@/lib/api/types"
 
 export type CreateProjectState = {
   error?: string
+  id?: string
 }
 
 export async function createProjectAction(
@@ -17,16 +16,15 @@ export async function createProjectAction(
   const name = String(formData.get("name") ?? "").trim()
   const brief = String(formData.get("brief") ?? "").trim()
 
-  let project: Project
-
   try {
-    project = await serverApiRequest<Project>("/v1/projects", {
+    const project = await serverApiRequest<Project>("/v1/projects", {
       method: "POST",
       json: {
         name,
         brief: brief || undefined,
       },
     })
+    return { id: project.id }
   } catch (error) {
     if (error instanceof ApiRequestError) {
       return { error: error.message }
@@ -34,6 +32,4 @@ export async function createProjectAction(
 
     return { error: "Could not create project." }
   }
-
-  redirect(`/dashboard/projects/${project.id}`)
 }

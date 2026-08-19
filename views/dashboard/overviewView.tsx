@@ -9,16 +9,24 @@ import {
   ThumbsUpIcon,
 } from "@phosphor-icons/react"
 
+import {
+  MessageAction,
+  MessageActions,
+  MessageResponse,
+} from "@/components/ai-elements/message"
+import { Shimmer } from "@/components/ai-elements/shimmer"
+import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
 import { ChatEmoji, type ChatEmojiMood } from "@/components/brand/chat-emoji"
+import { BrandEmojiCycle } from "@/components/brand/emoji-cycle"
 import {
   ChatComposer,
   FileCard,
   type ComposerFile,
   type SentAttachment,
 } from "@/components/dashboard/chat-composer"
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { AttachmentGroup } from "@/components/ui/attachment"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
-import { Button } from "@/components/ui/button"
 import { Marker, MarkerContent } from "@/components/ui/marker"
 import {
   Message,
@@ -33,8 +41,16 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { useChatMoodSounds } from "@/hooks/use-chat-mood-sounds"
-import type { UserOverview } from "@/lib/api/types"
+import { useUserOverview } from "@/hooks/use-dashboard-query"
+
+const CHAT_SUGGESTIONS = [
+  "What can you help with?",
+  "Draft a short update",
+  "Explain this simply",
+  "Help me plan a project",
+]
 
 type ChatMessage = {
   id: string
@@ -59,14 +75,13 @@ function isSearchQuery(text: string) {
   return /\b(search|look up|google|find online|web search)\b/i.test(text)
 }
 
-export function OverviewView({ overview }: { overview: UserOverview }) {
-  const firstName = overview.user.name.split(" ")[0]
-  const userInitials = overview.user.name
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
+export function OverviewView({
+  showSuggestions = false,
+}: {
+  showSuggestions?: boolean
+}) {
+  const { data: overview } = useUserOverview()
+  const firstName = overview?.user.name.split(" ")[0] ?? ""
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -128,8 +143,8 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
     })
   }
 
-  function handleSend() {
-    const trimmed = input.trim()
+  function sendChat(text: string) {
+    const trimmed = text.trim()
     if ((!trimmed && attachments.length === 0) || streaming) return
 
     const sentAttachments: SentAttachment[] = attachments.map((item) => ({
@@ -168,6 +183,14 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
     }, 1200)
   }
 
+  function handleSend() {
+    sendChat(input)
+  }
+
+  function handleSuggestion(suggestion: string) {
+    sendChat(suggestion)
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -191,14 +214,19 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
 
   useChatMoodSounds(chatMood)
 
+  if (!overview) {
+    return <DashboardSkeleton />
+  }
+
   return (
-    <div className="flex h-full flex-col">
+    <TooltipProvider>
+      <div className="flex h-full flex-col">
       <div className="relative flex min-h-0 flex-1 flex-col">
         {!hasMessages ? (
           /* Empty state — greeting + input centered together */
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
             <h1 className="inline-flex max-w-full flex-row items-center justify-center gap-2.5 font-heading text-3xl font-semibold tracking-tight xs:text-4xl">
-              <ChatEmoji mood={chatMood} className="size-10 shrink-0 xs:size-12" />
+              <BrandEmojiCycle className="size-10 xs:size-12" />
               <span className="min-w-0">{greet(firstName)}</span>
             </h1>
             <div className="w-full">
@@ -213,6 +241,20 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                 onRemoveFile={handleRemoveFile}
                 streaming={streaming}
               />
+              {showSuggestions ? (
+                <div className="mt-3">
+                  <Suggestions className="mx-auto">
+                    {CHAT_SUGGESTIONS.map((suggestion) => (
+                      <Suggestion
+                        key={suggestion}
+                        suggestion={suggestion}
+                        onClick={handleSuggestion}
+                        disabled={streaming}
+                      />
+                    ))}
+                  </Suggestions>
+                </div>
+              ) : null}
               <p className="mt-3 text-center text-xs text-muted-foreground/40">
                 Daaybot can make mistakes. Check important info.
               </p>
@@ -255,17 +297,22 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                                 <BubbleContent>{msg.content}</BubbleContent>
                               </Bubble>
                             ) : null}
-                            <MessageFooter className="justify-end gap-1">
-                              <Button
-                                variant="ghost" size="icon"
-                                className="size-6 text-muted-foreground hover:text-foreground"
-                                aria-label="Copy"
-                                onClick={() => copyContent(msg.id, msg.content)}
-                              >
-                                {copied === msg.id
-                                  ? <CheckIcon className="size-3.5 text-foreground" />
-                                  : <CopyIcon className="size-3.5" />}
-                              </Button>
+                            <MessageFooter className="justify-end">
+                              <MessageActions>
+                                <MessageAction
+                                  size="icon-xs"
+                                  className="text-muted-foreground hover:text-foreground"
+                                  tooltip="Copy"
+                                  label="Copy"
+                                  onClick={() => copyContent(msg.id, msg.content)}
+                                >
+                                  {copied === msg.id ? (
+                                    <CheckIcon className="text-foreground" />
+                                  ) : (
+                                    <CopyIcon />
+                                  )}
+                                </MessageAction>
+                              </MessageActions>
                             </MessageFooter>
                           </MessageContent>
                         </Message>
@@ -274,56 +321,60 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                         <Message align="start">
                           <MessageContent>
                             <Bubble variant="ghost" align="start">
-                              <BubbleContent className="flex items-start gap-1.5 text-sm leading-relaxed">
+                              <BubbleContent className="flex w-full max-w-full items-start gap-1.5 text-sm leading-relaxed">
                                 {msg.id === lastAssistant?.id && !streaming ? (
                                   <ChatEmoji mood={chatMood} className="mt-0.5 size-6 shrink-0" />
                                 ) : null}
-                                <span className="min-w-0">{msg.content}</span>
+                                <MessageResponse className="size-auto min-w-0 flex-1">
+                                  {msg.content}
+                                </MessageResponse>
                               </BubbleContent>
                             </Bubble>
-                            <MessageFooter className="gap-1">
-                              <Button
-                                variant="ghost" size="icon"
-                                className="size-6 text-muted-foreground hover:text-foreground"
-                                aria-label="Copy"
-                                onClick={() => copyContent(msg.id, msg.content)}
-                              >
-                                {copied === msg.id
-                                  ? <CheckIcon className="size-3.5 text-foreground" />
-                                  : <CopyIcon className="size-3.5" />}
-                              </Button>
-                              <Button
-                                variant="ghost" size="icon"
-                                className="size-6 hover:text-foreground"
-                                aria-label="Good response"
-                                onClick={() => toggleLike(msg.id, "up")}
-                              >
-                                <ThumbsUpIcon
-                                  className="size-3.5"
-                                  weight={liked[msg.id] === "up" ? "fill" : "regular"}
-                                  color={liked[msg.id] === "up" ? "currentColor" : undefined}
-                                />
-                              </Button>
-                              <Button
-                                variant="ghost" size="icon"
-                                className="size-6 hover:text-foreground"
-                                aria-label="Bad response"
-                                onClick={() => toggleLike(msg.id, "down")}
-                              >
-                                <ThumbsDownIcon
-                                  className="size-3.5"
-                                  weight={liked[msg.id] === "down" ? "fill" : "regular"}
-                                  color={liked[msg.id] === "down" ? "currentColor" : undefined}
-                                />
-                              </Button>
-                              <Button
-                                variant="ghost" size="icon"
-                                className="size-6 text-muted-foreground hover:text-foreground"
-                                aria-label="Regenerate"
-                                onClick={regenerateLast}
-                              >
-                                <ArrowClockwiseIcon className="size-3.5" />
-                              </Button>
+                            <MessageFooter>
+                              <MessageActions>
+                                <MessageAction
+                                  size="icon-xs"
+                                  className="text-muted-foreground hover:text-foreground"
+                                  tooltip="Copy"
+                                  label="Copy"
+                                  onClick={() => copyContent(msg.id, msg.content)}
+                                >
+                                  {copied === msg.id ? (
+                                    <CheckIcon className="text-foreground" />
+                                  ) : (
+                                    <CopyIcon />
+                                  )}
+                                </MessageAction>
+                                <MessageAction
+                                  size="icon-xs"
+                                  tooltip="Good response"
+                                  label="Good response"
+                                  onClick={() => toggleLike(msg.id, "up")}
+                                >
+                                  <ThumbsUpIcon
+                                    weight={liked[msg.id] === "up" ? "fill" : "regular"}
+                                  />
+                                </MessageAction>
+                                <MessageAction
+                                  size="icon-xs"
+                                  tooltip="Bad response"
+                                  label="Bad response"
+                                  onClick={() => toggleLike(msg.id, "down")}
+                                >
+                                  <ThumbsDownIcon
+                                    weight={liked[msg.id] === "down" ? "fill" : "regular"}
+                                  />
+                                </MessageAction>
+                                <MessageAction
+                                  size="icon-xs"
+                                  className="text-muted-foreground hover:text-foreground"
+                                  tooltip="Regenerate"
+                                  label="Regenerate"
+                                  onClick={regenerateLast}
+                                >
+                                  <ArrowClockwiseIcon />
+                                </MessageAction>
+                              </MessageActions>
                             </MessageFooter>
                           </MessageContent>
                         </Message>
@@ -338,9 +389,9 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
                           <Bubble variant="ghost" align="start">
                             <BubbleContent className="flex items-center gap-1.5 text-sm text-muted-foreground">
                               <ChatEmoji mood={chatMood} className="size-6 shrink-0" />
-                              <span>
+                              <Shimmer as="span">
                                 {chatMood === "searching" ? "Searching…" : "Thinking…"}
-                              </span>
+                              </Shimmer>
                             </BubbleContent>
                           </Bubble>
                         </MessageContent>
@@ -374,6 +425,7 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
           </p>
         </div>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }
