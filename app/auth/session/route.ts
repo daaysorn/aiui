@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 
 import {
   AIUI_ACCESS_COOKIE,
+  AIUI_ONBOARDING_SKIPPED_COOKIE,
   AIUI_REFRESH_COOKIE,
   aiuiCookieOptions,
 } from "@/lib/api/cookies"
@@ -56,6 +57,10 @@ export async function DELETE(request: Request) {
 
   response.cookies.set(AIUI_ACCESS_COOKIE, "", { ...aiuiCookieOptions(0), maxAge: 0 })
   response.cookies.set(AIUI_REFRESH_COOKIE, "", { ...aiuiCookieOptions(0), maxAge: 0 })
+  response.cookies.set(AIUI_ONBOARDING_SKIPPED_COOKIE, "", {
+    ...aiuiCookieOptions(0),
+    maxAge: 0,
+  })
 
   return response
 }

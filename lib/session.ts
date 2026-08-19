@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { cache } from "react"
 
-import { AIUI_ACCESS_COOKIE } from "@/lib/api/cookies"
+import { AIUI_ACCESS_COOKIE, AIUI_ONBOARDING_SKIPPED_COOKIE } from "@/lib/api/cookies"
 import { apiRequestOrThrow } from "@/lib/api/fetch"
 import type { SessionUser, UserOverview } from "@/lib/api/types"
 
@@ -44,4 +44,15 @@ export function needsOnboarding(user: SessionUser | null): boolean {
     return false
   }
   return !user.username || !user.telephone
+}
+
+export async function shouldRedirectToOnboarding(
+  user: SessionUser | null
+): Promise<boolean> {
+  if (!needsOnboarding(user) || !user) {
+    return false
+  }
+
+  const cookieStore = await cookies()
+  return cookieStore.get(AIUI_ONBOARDING_SKIPPED_COOKIE)?.value !== user.id
 }

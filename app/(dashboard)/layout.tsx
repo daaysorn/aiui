@@ -4,7 +4,7 @@ import type { ReactNode } from "react"
 import { DashboardQueryProvider } from "@/components/dashboard/query-provider"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { isFreePlan } from "@/lib/billing"
-import { getAccessToken, getUserOverview, needsOnboarding } from "@/lib/session"
+import { getAccessToken, getUserOverview, shouldRedirectToOnboarding } from "@/lib/session"
 import { siteRoutes } from "@/lib/site"
 
 export default async function DashboardLayout({
@@ -28,7 +28,7 @@ export default async function DashboardLayout({
     redirect(siteRoutes.verifyEmail)
   }
 
-  if (needsOnboarding(user)) {
+  if (await shouldRedirectToOnboarding(user)) {
     redirect(siteRoutes.onboarding)
   }
 

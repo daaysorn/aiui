@@ -125,12 +125,15 @@ function OnboardingForm() {
         </Button>
 
         <Button
-          type="submit"
-          name="skip"
-          value="1"
+          type="button"
           variant="ghost"
           disabled={pending}
           className="text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            const data = new FormData()
+            data.set("skip", "1")
+            formAction(data)
+          }}
         >
           Skip for now
         </Button>

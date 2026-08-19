@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { AuthFormSkeleton } from "@/components/auth/auth-form-skeleton"
 import {
   consumePendingAuthMethod,
   persistSession,
@@ -73,9 +74,12 @@ function AuthCallback() {
   }, [router, searchParams])
 
   return (
-    <p className="sr-only" role="status">
-      {message}
-    </p>
+    <>
+      <AuthFormSkeleton />
+      <p className="sr-only" role="status">
+        {message}
+      </p>
+    </>
   )
 }
 
