@@ -168,17 +168,16 @@
 }
 
 @utility animate-text-shimmer {
-  /* Glint is theme-aware (see --shimmer-base / --shimmer-glint). */
+  /* One glint at 50%; 0% and 100% match so the loop restart is invisible. */
   background-image: linear-gradient(
     90deg,
     var(--shimmer-base) 0%,
-    var(--shimmer-base) 38%,
-    var(--shimmer-glint) 48%,
-    var(--shimmer-glint) 52%,
-    var(--shimmer-base) 62%,
+    var(--shimmer-base) 25%,
+    var(--shimmer-glint) 50%,
+    var(--shimmer-base) 75%,
     var(--shimmer-base) 100%
   );
-  background-size: 220% auto;
+  background-size: 200% auto;
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;

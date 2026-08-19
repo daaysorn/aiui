@@ -13,14 +13,14 @@ function AuthBrand({
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 items-center gap-2 font-medium text-foreground",
+        "inline-flex min-w-0 items-center gap-2 text-foreground",
         className
       )}
     >
       <BrandEmojiCycle />
       <Link
         href={href}
-        className="motion-safe:animate-text-shimmer"
+        className="font-semibold motion-safe:animate-text-shimmer"
       >
         Daaybot
       </Link>
