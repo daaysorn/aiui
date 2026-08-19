@@ -38,3 +38,41 @@ export async function updateProfileAction(
     return { error: "Could not update profile." }
   }
 }
+
+export type ChangePasswordState = {
+  error?: string
+  message?: string
+}
+
+export async function changePasswordAction(
+  _previous: ChangePasswordState | null,
+  formData: FormData
+): Promise<ChangePasswordState> {
+  const currentPassword = String(formData.get("currentPassword") ?? "")
+  const newPassword = String(formData.get("newPassword") ?? "")
+  const confirmPassword = String(formData.get("confirmPassword") ?? "")
+
+  if (newPassword.length < 8) {
+    return { error: "Password must be at least 8 characters." }
+  }
+  if (newPassword !== confirmPassword) {
+    return { error: "Passwords do not match." }
+  }
+
+  try {
+    await serverApiRequest("/v1/user/change-password", {
+      method: "POST",
+      json: {
+        currentPassword,
+        newPassword,
+      },
+    })
+    return { message: "Password updated." }
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return { error: error.message }
+    }
+
+    return { error: "Could not change password." }
+  }
+}

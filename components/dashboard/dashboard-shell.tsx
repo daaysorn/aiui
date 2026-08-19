@@ -1,22 +1,23 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect, useState, type ReactNode } from "react"
-import { useTheme } from "next-themes"
+import { useState, type ReactNode } from "react"
 import {
   CaretRightIcon,
   CreditCardIcon,
-  DesktopIcon,
   GearIcon,
-  MoonIcon,
   SignOutIcon,
-  SunIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react"
 
 import { AuthBrand } from "@/components/auth/auth-brand"
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { PlansDialog } from "@/components/dashboard/plans-dialog"
+import {
+  SettingsDialog,
+  type SettingsSection,
+} from "@/components/dashboard/settings-dialog"
+import { ThemeToggleRow } from "@/components/dashboard/theme-toggle-row"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -35,47 +36,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { clearSession } from "@/lib/api/client"
-import { cn } from "@/lib/utils"
-
-const themeOptions = [
-  { value: "light", label: "Light", icon: SunIcon },
-  { value: "dark", label: "Dark", icon: MoonIcon },
-  { value: "system", label: "System", icon: DesktopIcon },
-] as const
-
-function ThemeToggleRow() {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  const current = mounted ? theme : undefined
-
-  return (
-    <div
-      className="flex gap-1 rounded-xl bg-muted p-1"
-      onPointerDown={(event) => event.preventDefault()}
-    >
-      {themeOptions.map((option) => {
-        const Icon = option.icon
-        const active = current === option.value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-label={option.label}
-            aria-pressed={active}
-            className={cn(
-              "flex h-8 flex-1 cursor-pointer items-center justify-center rounded-lg text-muted-foreground",
-              active && "bg-background text-foreground"
-            )}
-            onClick={() => setTheme(option.value)}
-          >
-            <Icon className="size-4" weight={active ? "fill" : "duotone"} />
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 type DashboardShellProps = {
   userName: string
@@ -116,6 +76,14 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const router = useRouter()
   const [plansOpen, setPlansOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsSection, setSettingsSection] =
+    useState<SettingsSection>("account")
+
+  function openSettings(section: SettingsSection) {
+    setSettingsSection(section)
+    setSettingsOpen(true)
+  }
 
   async function handleSignOut() {
     await clearSession()
@@ -163,7 +131,7 @@ export function DashboardShell({
               >
                 <DropdownMenuItem
                   className="gap-3 rounded-xl py-2"
-                  onClick={() => router.push("/dashboard/account")}
+                  onClick={() => openSettings("account")}
                 >
                   <Avatar className="size-8 overflow-hidden">
                     <AvatarImage src={userImage ?? undefined} alt={userName} />
@@ -178,15 +146,15 @@ export function DashboardShell({
                   <CaretRightIcon className="ml-auto size-4" weight="bold" />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/dashboard/account")}>
+                <DropdownMenuItem onClick={() => openSettings("account")}>
                   <UserCircleIcon weight="duotone" />
                   Account
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
+                <DropdownMenuItem onClick={() => openSettings("billing")}>
                   <CreditCardIcon weight="duotone" />
                   Billing
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+                <DropdownMenuItem onClick={() => openSettings("preferences")}>
                   <GearIcon weight="duotone" />
                   Settings
                 </DropdownMenuItem>
@@ -223,6 +191,12 @@ export function DashboardShell({
       {showUpgrade ? (
         <PlansDialog open={plansOpen} onOpenChange={setPlansOpen} />
       ) : null}
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        section={settingsSection}
+        onSectionChange={setSettingsSection}
+      />
     </SidebarProvider>
   )
 }
