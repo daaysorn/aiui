@@ -11,8 +11,8 @@
  * POST /v1/auth/sign-in/username      { username, password }
  * GET  /v1/auth/sign-out
  * GET  /v1/auth/get-session           → rewritten to /v1/user/me by apiFetch
- * POST /v1/auth/forget-password       { email, redirectTo }
- * POST /v1/auth/reset-password        { token, newPassword }
+ * POST /v1/auth/forget/password       { email, redirectTo }
+ * POST /v1/auth/reset/password        { token, newPassword }
  * POST /v1/auth/email-otp/send-verification-otp  { email, type: "email-verification" }
  * POST /v1/auth/email-otp/verify-email            { email, otp }
  * GET  /v1/auth/callback/{provider}               OAuth redirect endpoint

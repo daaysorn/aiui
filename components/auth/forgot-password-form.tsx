@@ -2,16 +2,13 @@
 
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useMemo, useState } from "react"
-import { REGEXP_ONLY_DIGITS } from "input-otp"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { AuthBrand } from "@/components/auth/auth-brand"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
-import { authClient, persistSession } from "@/lib/api/client"
-import { captchaHeaders } from "@/lib/api/fetch"
+import { requestPasswordReset, resetPasswordWithToken } from "@/lib/api/auth"
 import { authCopy, siteRoutes } from "@/lib/site"
 
 import { PasswordInput } from "./password-input"
@@ -21,10 +18,9 @@ function ForgotPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState(() => searchParams.get("email")?.trim() ?? "")
-  const [otp, setOtp] = useState("")
   const [password, setPassword] = useState("")
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const [step, setStep] = useState<"email" | "reset">("email")
+  const [linkSent, setLinkSent] = useState(false)
   const [pending, setPending] = useState(false)
 
   const resetToken = useMemo(
@@ -32,7 +28,14 @@ function ForgotPasswordForm() {
     [searchParams]
   )
 
-  async function handleSendCode(event: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    const error = searchParams.get("error")?.trim()
+    if (error === "INVALID_TOKEN") {
+      toast.error("Reset link expired. Request a new one.")
+    }
+  }, [searchParams])
+
+  async function handleRequestLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending) return
     if (!captchaToken) {
@@ -41,53 +44,21 @@ function ForgotPasswordForm() {
     }
     setPending(true)
 
-    const result = await authClient.emailOtp.requestPasswordReset({
-      email,
-      fetchOptions: { headers: captchaHeaders(captchaToken) },
-    })
+    const redirectTo = `${window.location.origin}${siteRoutes.forgotPassword}`
+    const result = await requestPasswordReset(
+      email.trim(),
+      redirectTo,
+      captchaToken
+    )
     setPending(false)
 
-    if (result.error) {
-      toast.error(result.error.message ?? "Could not send reset code.")
+    if (!result.ok) {
+      toast.error(result.envelope.message || "Could not send reset link.")
       return
     }
 
-    toast.success("Reset code sent.")
-    setStep("reset")
-  }
-
-  async function handleResetPassword(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (pending) return
-    setPending(true)
-
-    const result = await authClient.emailOtp.resetPassword({
-      email,
-      otp,
-      password,
-    })
-
-    setPending(false)
-
-    if (result.error) {
-      toast.error(result.error.message ?? "Password reset failed.")
-      return
-    }
-
-    const data = result.data as { token?: string; refreshToken?: string } | null
-    if (data?.token) {
-      await persistSession({
-        token: data.token,
-        refreshToken: data.refreshToken,
-      })
-      toast.success("Password updated.")
-      router.push(siteRoutes.dashboard)
-      router.refresh()
-      return
-    }
-
-    toast.success("Password updated. Sign in with your new password.")
-    router.push(siteRoutes.signIn)
+    toast.success("Reset link sent.")
+    setLinkSent(true)
   }
 
   async function handleTokenReset(event: React.FormEvent<HTMLFormElement>) {
@@ -95,21 +66,27 @@ function ForgotPasswordForm() {
     if (pending || !resetToken) return
     setPending(true)
 
-    const result = await authClient.resetPassword({
-      newPassword: password,
+    const result = await resetPasswordWithToken({
       token: resetToken,
+      newPassword: password,
     })
 
     setPending(false)
 
-    if (result.error) {
-      toast.error(result.error.message ?? "Password reset failed.")
+    if (!result.ok) {
+      toast.error(result.envelope.message || "Password reset failed.")
       return
     }
 
     toast.success("Password updated.")
     router.push(siteRoutes.signIn)
   }
+
+  const subtitle = resetToken
+    ? "Choose a new password."
+    : linkSent
+      ? "Check email for reset link."
+      : "We email a reset link."
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-8">
@@ -122,13 +99,7 @@ function ForgotPasswordForm() {
 
       <div className="space-y-3">
         <h1 className="font-heading text-2xl font-bold tracking-tight">Reset password</h1>
-        <p className="text-sm text-muted-foreground">
-          {resetToken
-            ? "Choose a new password for your account."
-            : step === "email"
-              ? "We email a one-time code so you can choose a new password."
-              : "Enter the code from your email and a new password."}
-        </p>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
 
       {resetToken ? (
@@ -145,8 +116,24 @@ function ForgotPasswordForm() {
             Update password
           </Button>
         </form>
-      ) : step === "email" ? (
-        <form className="space-y-4" onSubmit={handleSendCode}>
+      ) : linkSent ? (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            If an account exists for{" "}
+            <span className="break-all font-medium text-foreground">{email}</span>,
+            open the link in that email to choose a new password.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setLinkSent(false)}
+          >
+            Send another link
+          </Button>
+        </div>
+      ) : (
+        <form className="space-y-4" onSubmit={handleRequestLink}>
           <Input
             type="email"
             placeholder={authCopy.placeholders.email}
@@ -156,28 +143,7 @@ function ForgotPasswordForm() {
           />
           <TurnstileField onChange={setCaptchaToken} />
           <Button type="submit" className="w-full" loading={pending}>
-            Send reset code
-          </Button>
-        </form>
-      ) : (
-        <form className="space-y-4" onSubmit={handleResetPassword}>
-          <InputOTP maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={otp} onChange={setOtp}>
-            <InputOTPGroup>
-              {Array.from({ length: 6 }, (_, index) => (
-                <InputOTPSlot key={index} index={index} />
-              ))}
-            </InputOTPGroup>
-          </InputOTP>
-          <PasswordInput
-            showStrength
-            placeholder={authCopy.placeholders.resetPassword}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            minLength={8}
-          />
-          <Button type="submit" className="w-full" loading={pending} disabled={otp.length !== 6}>
-            Update password
+            Email reset link
           </Button>
         </form>
       )}

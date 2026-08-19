@@ -98,11 +98,19 @@ export async function verifyEmailOtp(input: { email: string; otp: string }) {
   })
 }
 
-export async function requestPasswordReset(email: string, redirectTo: string) {
-  return apiRequest<{ status?: boolean }>(getAuthPublicPath("/forget/password"), {
-    method: "POST",
-    json: { email, redirectTo },
-  })
+export async function requestPasswordReset(
+  email: string,
+  redirectTo: string,
+  captchaToken?: string | null
+) {
+  return apiRequest<{ status?: boolean; message?: string }>(
+    getAuthPublicPath("/forget/password"),
+    {
+      method: "POST",
+      json: { email, redirectTo },
+      captchaToken,
+    }
+  )
 }
 
 export async function resetPasswordWithToken(input: {

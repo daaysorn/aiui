@@ -47,7 +47,7 @@ Clean URLs (`/sign-in`, `/sign-up`, etc.) rewrite to internal `app/auth/*` route
 | `/sign-in` | Email and social sign in |
 | `/sign-up` | Create account |
 | `/verify-email` | Email OTP verification |
-| `/forgot-password` | Password reset (OTP or token link) |
+| `/forgot-password` | Password reset (email link) |
 | `/callback` | OAuth return handler |
 | `/onboarding` | Username and phone |
 | `/dashboard` | Overview, credits, orgs |
