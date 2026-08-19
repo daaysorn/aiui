@@ -4,10 +4,13 @@ import { useQuery } from "@tanstack/react-query"
 
 import {
   fetchBillingPlans,
+  fetchCatalog,
   fetchProject,
   fetchProjects,
+  fetchRecentChats,
   fetchUserOverview,
 } from "@/lib/api/dashboard-data"
+import type { CatalogKind } from "@/lib/api/types"
 import { queryKeys } from "@/lib/query/keys"
 
 export function useUserOverview() {
@@ -37,5 +40,19 @@ export function useBillingPlans(enabled = true) {
     queryKey: queryKeys.billingPlans,
     queryFn: fetchBillingPlans,
     enabled,
+  })
+}
+
+export function useCatalog(kind: CatalogKind) {
+  return useQuery({
+    queryKey: queryKeys.catalog(kind),
+    queryFn: () => fetchCatalog(kind),
+  })
+}
+
+export function useRecentChats() {
+  return useQuery({
+    queryKey: queryKeys.recentChats,
+    queryFn: fetchRecentChats,
   })
 }

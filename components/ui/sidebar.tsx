@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { SidebarSimpleIcon } from "@phosphor-icons/react"
+import { DotsSixVerticalIcon, SidebarSimpleIcon } from "@phosphor-icons/react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_WIDTH_COOKIE_NAME = "sidebar_width"
@@ -328,8 +328,15 @@ function rootFontSize() {
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
-  const { toggleSidebar, setOpen, open, width, setWidth, setIsResizing } =
-    useSidebar()
+  const {
+    toggleSidebar,
+    setOpen,
+    open,
+    width,
+    setWidth,
+    setIsResizing,
+    isResizing,
+  } = useSidebar()
   const dragRef = React.useRef({
     active: false,
     moved: false,
@@ -407,6 +414,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
     <button
       data-sidebar="rail"
       data-slot="sidebar-rail"
+      data-resizing={isResizing ? "" : undefined}
       aria-label="Resize sidebar"
       title="Drag to resize"
       tabIndex={-1}
@@ -415,15 +423,23 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       className={cn(
-        "absolute inset-y-0 z-20 hidden w-4 touch-none transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
+        "group/rail absolute inset-y-0 z-20 hidden w-4 touch-none sm:flex",
         "in-data-[side=left]:cursor-col-resize in-data-[side=right]:cursor-col-resize",
-        "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",
+        "group-data-[side=left]:-right-4 group-data-[side=right]:left-0",
+        "ltr:-translate-x-1/2 rtl:-translate-x-1/2",
+        "group-data-[collapsible=offcanvas]:translate-x-0",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
         className
       )}
       {...props}
-    />
+    >
+      <DotsSixVerticalIcon
+        weight="bold"
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-muted-foreground opacity-0 transition-opacity group-hover/rail:opacity-100 group-data-resizing/rail:opacity-100"
+      />
+    </button>
   )
 }
 
@@ -432,7 +448,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:outline-1 md:peer-data-[variant=inset]:outline-muted md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+        "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:overflow-hidden md:peer-data-[variant=inset]:rounded-3xl md:peer-data-[variant=inset]:outline-1 md:peer-data-[variant=inset]:outline-muted md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
         className
       )}
       {...props}
@@ -725,15 +741,12 @@ function SidebarMenuBadge({
 function SidebarMenuSkeleton({
   className,
   showIcon = false,
+  width = "70%",
   ...props
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
+  width?: string
 }) {
-  // Random width between 50 to 90%.
-  const [width] = React.useState(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  })
-
   return (
     <div
       data-slot="sidebar-menu-skeleton"

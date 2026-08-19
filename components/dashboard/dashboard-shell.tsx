@@ -1,19 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useEffect, useState, type ReactNode } from "react"
 import {
-  FolderIcon,
   GearIcon,
   MoonIcon,
   SignOutIcon,
-  SquaresFourIcon,
   SunIcon,
 } from "@phosphor-icons/react"
 
 import { AuthBrand } from "@/components/auth/auth-brand"
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { PlansDialog } from "@/components/dashboard/plans-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -26,25 +25,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   Sidebar,
-  SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
   SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { clearSession } from "@/lib/api/client"
-
-const navItems = [
-  { href: "/dashboard", label: "Overview", icon: SquaresFourIcon, exact: true },
-  { href: "/dashboard/projects", label: "Projects", icon: FolderIcon, exact: false },
-  { href: "/dashboard/settings", label: "Settings", icon: GearIcon, exact: false },
-]
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
@@ -56,9 +43,9 @@ function ThemeToggle() {
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
       {mounted && resolvedTheme === "dark" ? (
-        <SunIcon className="size-4" />
+        <SunIcon className="size-4" weight="duotone" />
       ) : (
-        <MoonIcon className="size-4" />
+        <MoonIcon className="size-4" weight="duotone" />
       )}
       {mounted && resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
     </DropdownMenuItem>
@@ -86,7 +73,6 @@ export function DashboardShell({
   showUpgrade = false,
   children,
 }: DashboardShellProps) {
-  const pathname = usePathname()
   const router = useRouter()
   const [plansOpen, setPlansOpen] = useState(false)
 
@@ -104,32 +90,14 @@ export function DashboardShell({
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar variant="inset">
         <SidebarHeader>
           <div className="px-2 py-1.5">
             <AuthBrand href="/dashboard" />
           </div>
         </SidebarHeader>
 
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {navItems.map(({ href, label, icon: Icon, exact }) => {
-                  const active = exact ? pathname === href : pathname.startsWith(href)
-                  return (
-                    <SidebarMenuItem key={href}>
-                      <SidebarMenuButton isActive={active} render={<Link href={href} />}>
-                        <Icon />
-                        {label}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
+        <DashboardSidebar />
 
         <SidebarFooter>
           <div className="flex min-w-0 items-center gap-2 rounded-lg p-1.5 outline-solid outline-1 outline-transparent transition-colors hover:bg-sidebar-accent hover:outline-border has-data-open:bg-sidebar-accent has-data-open:outline-border">
@@ -147,10 +115,14 @@ export function DashboardShell({
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start" className="w-56">
+                <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+                  <GearIcon weight="duotone" />
+                  Settings
+                </DropdownMenuItem>
                 <ThemeToggle />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => void handleSignOut()}>
-                  <SignOutIcon className="size-4" />
+                  <SignOutIcon weight="duotone" />
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>

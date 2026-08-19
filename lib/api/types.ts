@@ -161,6 +161,27 @@ export type ProjectDetail = Project & {
   items?: ProjectItem[]
 }
 
+export type CatalogKind = "skill" | "mcp" | "plugin"
+
+export type CatalogItem = {
+  id: string
+  kind: CatalogKind
+  slug: string
+  name: string | null
+  description: string | null
+  mcpUrl: string | null
+  authKind: string | null
+  defaultEnabled: boolean
+}
+
+export type RecentChat = {
+  id: string
+  title: string
+  projectId: string
+  projectName: string
+  updatedAt: string
+}
+
 // ── Organization ──────────────────────────────────────────────────────────────
 
 export type OrganizationMember = {
