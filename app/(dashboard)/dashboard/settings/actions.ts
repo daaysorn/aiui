@@ -18,6 +18,8 @@ export async function updateProfileAction(
   const username = String(formData.get("username") ?? "").trim()
   const telephone = String(formData.get("telephone") ?? "").trim()
 
+  const image = String(formData.get("image") ?? "").trim()
+
   try {
     await serverApiRequest<{ user: unknown }>("/v1/user/profile", {
       method: "PATCH",
@@ -25,6 +27,7 @@ export async function updateProfileAction(
         name,
         username: username || undefined,
         telephone: telephone || undefined,
+        image: image || undefined,
       },
     })
     revalidatePath("/dashboard/account")

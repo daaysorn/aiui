@@ -1,7 +1,6 @@
 "use client"
 
 import { useActionState, useEffect, useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import {
   BellIcon,
   CheckCircleIcon,
@@ -12,6 +11,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react"
 
+import { AccountPanel } from "@/components/dashboard/account-panel"
 import { PlansDialog } from "@/components/dashboard/plans-dialog"
 import { ThemeToggleRow } from "@/components/dashboard/theme-toggle-row"
 import { PasswordInput } from "@/components/auth/password-input"
@@ -23,21 +23,17 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
 import { useSoundNotifications } from "@/hooks/use-sound-notifications"
 import { playMoodCue } from "@/lib/chat-sounds"
 import { isFreePlan } from "@/lib/billing"
-import { queryKeys } from "@/lib/query/keys"
 import { setSoundNotificationsEnabled } from "@/lib/sound-notifications"
 import { cn } from "@/lib/utils"
 import {
   changePasswordAction,
-  updateProfileAction,
   type ChangePasswordState,
-  type SettingsState,
 } from "@/app/(dashboard)/dashboard/settings/actions"
 
 export type SettingsSection = "account" | "billing" | "preferences" | "security"
@@ -55,73 +51,6 @@ const navItems: {
 
 function formatCreditBalance(balance: number) {
   return new Intl.NumberFormat("en-US").format(balance)
-}
-
-function AccountPanel() {
-  const { data: overview } = useUserOverview()
-  const queryClient = useQueryClient()
-  const [state, formAction, pending] = useActionState<SettingsState | null, FormData>(
-    updateProfileAction,
-    null
-  )
-  const user = overview?.user
-
-  useEffect(() => {
-    if (!state?.message) return
-    void queryClient.invalidateQueries({ queryKey: queryKeys.overview })
-  }, [queryClient, state?.message])
-
-  if (!user) return null
-
-  return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-4">
-      {state?.error ? (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </p>
-      ) : null}
-      {state?.message ? (
-        <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
-          {state.message}
-        </p>
-      ) : null}
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-email" className="text-sm font-medium">
-          Email
-        </label>
-        <Input id="settings-email" value={user.email} disabled />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-name" className="text-sm font-medium">
-          Name
-        </label>
-        <Input id="settings-name" name="name" defaultValue={user.name} required />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-username" className="text-sm font-medium">
-          Username
-        </label>
-        <Input
-          id="settings-username"
-          name="username"
-          defaultValue={user.username ?? ""}
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="settings-telephone" className="text-sm font-medium">
-          Phone
-        </label>
-        <Input
-          id="settings-telephone"
-          name="telephone"
-          defaultValue={user.telephone ?? ""}
-        />
-      </div>
-      <Button type="submit" className="self-end" loading={pending}>
-        Save changes
-      </Button>
-    </form>
-  )
 }
 
 function BillingPanel() {
@@ -377,7 +306,7 @@ function SettingsDialog({
               <span className="sr-only">Close</span>
             </DialogClose>
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
             <div className="mb-5 flex flex-col gap-1">
               <h2 className="font-heading text-lg font-semibold">{active.label}</h2>
               <p className="text-sm text-muted-foreground">{descriptions[section]}</p>

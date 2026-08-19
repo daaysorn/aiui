@@ -1,12 +1,10 @@
 "use client"
 
 import { useActionState, useCallback, useState } from "react"
-import PhoneInput, { type Value as PhoneValue } from "react-phone-number-input"
-import flags from "react-phone-number-input/flags"
-import "react-phone-number-input/style.css"
 import { CheckCircleIcon, SpinnerGapIcon, XCircleIcon } from "@phosphor-icons/react"
 
 import { submitOnboarding, type OnboardingState } from "@/app/onboarding/actions"
+import { PhoneNumberField, type PhoneValue } from "@/components/auth/phone-number-field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAvailability, type Status } from "@/hooks/use-availability"
@@ -91,33 +89,19 @@ function OnboardingForm() {
           <label htmlFor="telephone" className="block text-sm font-medium">
             Phone
           </label>
-          <div
-            className={cn(
-              "flex h-9 w-full min-w-0 overflow-hidden rounded-md border bg-transparent text-sm shadow-xs transition-colors focus-within:border-ring",
-              phoneStatus === "taken" ? "border-destructive focus-within:border-destructive" : "border-input",
-              "[&_.PhoneInputCountry]:flex [&_.PhoneInputCountry]:shrink-0 [&_.PhoneInputCountry]:items-center [&_.PhoneInputCountry]:gap-1 [&_.PhoneInputCountry]:border-r [&_.PhoneInputCountry]:border-input [&_.PhoneInputCountry]:px-2.5",
-              "[&_.PhoneInputCountryIcon]:block [&_.PhoneInputCountryIcon]:size-4 [&_.PhoneInputCountryIcon--border]:border-0 [&_.PhoneInputCountryIcon--border]:shadow-none",
-              "[&_.PhoneInputCountrySelect]:absolute [&_.PhoneInputCountry]:relative [&_.PhoneInputCountrySelect]:inset-0 [&_.PhoneInputCountrySelect]:cursor-pointer [&_.PhoneInputCountrySelect]:opacity-0",
-              "[&_.PhoneInputCountrySelectArrow]:hidden"
-            )}
+          <PhoneNumberField
+            id="telephone"
+            name="telephone"
+            value={phone}
+            onChange={setPhone}
+            invalid={phoneStatus === "taken"}
           >
-            <PhoneInput
-              id="telephone"
-              name="telephone"
-              flags={flags}
-              international
-              defaultCountry="NG"
-              value={phone}
-              onChange={setPhone}
-              inputComponent={Input}
-              className="flex flex-1 items-center [&_input]:h-full [&_input]:flex-1 [&_input]:rounded-none [&_input]:border-0 [&_input]:shadow-none [&_input]:focus-visible:border-0"
-            />
             {phoneStatus !== "idle" && (
               <span className="pointer-events-none flex shrink-0 items-center pr-2.5">
                 <StatusIcon status={phoneStatus} />
               </span>
             )}
-          </div>
+          </PhoneNumberField>
         </div>
 
         <Button type="submit" loading={pending} disabled={!canContinue || pending}>
