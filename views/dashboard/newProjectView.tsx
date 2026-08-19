@@ -1,38 +1,20 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useActionState } from "react"
 
+import {
+  createProjectAction,
+  type CreateProjectState,
+} from "@/app/(dashboard)/dashboard/projects/new/actions"
 import { DashboardSection } from "@/components/dashboard/dashboard-shell"
-import { AuthField, AuthMessage } from "@/components/auth/auth-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { createProject } from "@/lib/api/projects"
 
 export function NewProjectView() {
-  const router = useRouter()
-  const [name, setName] = useState("")
-  const [brief, setBrief] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPending(true)
-    setError(null)
-
-    try {
-      const project = await createProject({
-        name,
-        brief: brief.trim() || undefined,
-      })
-      router.push(`/dashboard/projects/${project.id}`)
-      router.refresh()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create project")
-      setPending(false)
-    }
-  }
+  const [state, formAction, pending] = useActionState<
+    CreateProjectState | null,
+    FormData
+  >(createProjectAction, null)
 
   return (
     <DashboardSection
@@ -40,29 +22,35 @@ export function NewProjectView() {
       description="Give the site a name and a short brief. You can add instructions and skills later."
     >
       <form
-        onSubmit={handleSubmit}
+        action={formAction}
         className="max-w-xl space-y-4 rounded-xl border border-border bg-card p-6"
       >
-        {error ? <AuthMessage>{error}</AuthMessage> : null}
-        <AuthField label="Project name" htmlFor="name">
-          <Input
-            id="name"
-            required
-            maxLength={120}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </AuthField>
-        <AuthField label="Brief" htmlFor="brief" hint="Optional. One or two sentences about the site.">
+        {state?.error ? (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {state.error}
+          </p>
+        ) : null}
+        <div className="space-y-2">
+          <label htmlFor="name" className="text-sm font-medium">
+            Project name
+          </label>
+          <Input id="name" name="name" required maxLength={120} />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="brief" className="text-sm font-medium">
+            Brief
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Optional. One or two sentences about the site.
+          </p>
           <textarea
             id="brief"
+            name="brief"
             rows={4}
             maxLength={8000}
-            value={brief}
-            onChange={(event) => setBrief(event.target.value)}
             className="flex min-h-24 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
-        </AuthField>
+        </div>
         <Button type="submit" disabled={pending}>
           {pending ? "Creating..." : "Create project"}
         </Button>

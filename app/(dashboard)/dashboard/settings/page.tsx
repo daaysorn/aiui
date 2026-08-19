@@ -10,7 +10,7 @@ export default async function SettingsPage() {
     const result = await serverApiFetch<{ user: SessionUser }>("/v1/user/me")
     user = result.user
   } catch {
-    redirect("/auth/sign-in")
+    redirect("/sign-in")
   }
 
   return <SettingsView user={user} />

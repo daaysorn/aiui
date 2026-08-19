@@ -1,41 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useActionState } from "react"
 
-import { AuthField, AuthMessage } from "@/components/auth/auth-shell"
+import {
+  updateProfileAction,
+  type SettingsState,
+} from "@/app/(dashboard)/dashboard/settings/actions"
 import { DashboardSection } from "@/components/dashboard/dashboard-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { SessionUser } from "@/lib/api/types"
-import { updateProfile } from "@/lib/api/user"
 
 export function SettingsView({ user }: { user: SessionUser }) {
-  const [name, setName] = useState(user.name)
-  const [username, setUsername] = useState(user.username ?? "")
-  const [telephone, setTelephone] = useState(user.telephone ?? "")
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPending(true)
-    setError(null)
-    setMessage(null)
-
-    try {
-      await updateProfile({
-        name,
-        username: username || undefined,
-        telephone: telephone || undefined,
-      })
-      setMessage("Profile updated.")
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update profile")
-    } finally {
-      setPending(false)
-    }
-  }
+  const [state, formAction, pending] = useActionState<SettingsState | null, FormData>(
+    updateProfileAction,
+    null
+  )
 
   return (
     <DashboardSection
@@ -43,35 +23,51 @@ export function SettingsView({ user }: { user: SessionUser }) {
       description="Profile details for your daaysorn account."
     >
       <form
-        onSubmit={handleSubmit}
+        action={formAction}
         className="max-w-xl space-y-4 rounded-xl border border-border bg-card p-6"
       >
-        {error ? <AuthMessage>{error}</AuthMessage> : null}
-        {message ? <AuthMessage tone="success">{message}</AuthMessage> : null}
-        <AuthField label="Email" htmlFor="email">
+        {state?.error ? (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {state.error}
+          </p>
+        ) : null}
+        {state?.message ? (
+          <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
+            {state.message}
+          </p>
+        ) : null}
+        <div className="space-y-2">
+          <label htmlFor="email" className="text-sm font-medium">
+            Email
+          </label>
           <Input id="email" value={user.email} disabled />
-        </AuthField>
-        <AuthField label="Name" htmlFor="name">
-          <Input
-            id="name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </AuthField>
-        <AuthField label="Username" htmlFor="username">
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="name" className="text-sm font-medium">
+            Name
+          </label>
+          <Input id="name" name="name" defaultValue={user.name} required />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="username" className="text-sm font-medium">
+            Username
+          </label>
           <Input
             id="username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
+            name="username"
+            defaultValue={user.username ?? ""}
           />
-        </AuthField>
-        <AuthField label="Phone" htmlFor="telephone">
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="telephone" className="text-sm font-medium">
+            Phone
+          </label>
           <Input
             id="telephone"
-            value={telephone}
-            onChange={(event) => setTelephone(event.target.value)}
+            name="telephone"
+            defaultValue={user.telephone ?? ""}
           />
-        </AuthField>
+        </div>
         <Button type="submit" disabled={pending}>
           {pending ? "Saving..." : "Save changes"}
         </Button>

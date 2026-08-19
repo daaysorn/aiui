@@ -9,7 +9,7 @@ export default async function DashboardPage() {
   try {
     overview = await serverApiFetch<UserOverview>("/v1/user/overview")
   } catch {
-    redirect("/auth/sign-in")
+    redirect("/sign-in")
   }
 
   return <OverviewView overview={overview} />

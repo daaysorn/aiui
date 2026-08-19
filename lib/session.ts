@@ -1,53 +1,31 @@
-import { headers } from "next/headers"
+import { cookies } from "next/headers"
 
-import { isApiEnvelope } from "@/lib/api/envelope"
-import { getPublicSiteUrl } from "@/lib/env"
+import { AIUI_ACCESS_COOKIE } from "@/lib/api/cookies"
+import { apiRequestOrThrow } from "@/lib/api/fetch"
+import type { SessionUser } from "@/lib/api/types"
 
-type SessionPayload = {
-  session: {
-    id: string
-    userId: string
-    expiresAt: string
-  } | null
-  user: {
-    id: string
-    name: string
-    email: string
-    emailVerified: boolean
-    username: string | null
-    telephone: string | null
-    image: string | null
-  } | null
+export async function getAccessToken(): Promise<string | null> {
+  const cookieStore = await cookies()
+  return cookieStore.get(AIUI_ACCESS_COOKIE)?.value ?? null
 }
 
-export async function getServerSession(): Promise<SessionPayload | null> {
-  const headerStore = await headers()
-  const cookie = headerStore.get("cookie") ?? ""
-  if (!cookie) {
+export async function getServerUser(): Promise<SessionUser | null> {
+  const token = await getAccessToken()
+  if (!token) {
     return null
   }
 
-  const response = await fetch(`${getPublicSiteUrl()}/v1/auth/get-session`, {
-    headers: { cookie },
-    cache: "no-store",
-  })
-
-  if (!response.ok) {
+  try {
+    const user = await apiRequestOrThrow<{ user: SessionUser }>("/v1/user/me", {
+      token,
+    })
+    return user.user ?? null
+  } catch {
     return null
   }
-
-  const payload: unknown = await response.json()
-  if (isApiEnvelope(payload)) {
-    if (payload.statusCode >= 400 || !payload.data) {
-      return null
-    }
-    return payload.data as SessionPayload
-  }
-
-  return payload as SessionPayload
 }
 
-export function needsOnboarding(user: SessionPayload["user"]): boolean {
+export function needsOnboarding(user: SessionUser | null): boolean {
   if (!user) {
     return false
   }

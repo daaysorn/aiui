@@ -5,8 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import type { ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
-import { authClient } from "@/lib/auth-client"
-import { signOutUser } from "@/lib/api/user"
+import { clearSession } from "@/lib/api/client"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -30,9 +29,8 @@ export function DashboardShell({
   const router = useRouter()
 
   async function handleSignOut() {
-    await signOutUser().catch(() => undefined)
-    await authClient.signOut()
-    router.push("/auth/sign-in")
+    await clearSession()
+    router.push("/sign-in")
     router.refresh()
   }
 

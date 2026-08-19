@@ -10,7 +10,7 @@ export default async function ProjectsPage() {
     const result = await serverApiFetch<{ projects: Project[] }>("/v1/projects")
     projects = result.projects
   } catch {
-    redirect("/auth/sign-in")
+    redirect("/sign-in")
   }
 
   return <ProjectsView projects={projects} />
