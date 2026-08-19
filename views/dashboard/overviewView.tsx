@@ -30,6 +30,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
+import { useChatMoodSounds } from "@/hooks/use-chat-mood-sounds"
 import type { UserOverview } from "@/lib/api/types"
 
 type ChatMessage = {
@@ -289,6 +290,8 @@ export function OverviewView({ overview }: { overview: UserOverview }) {
       : lastUser && /^(huh+\??|\?\?+|what\??)$/i.test(lastUser.content.trim())
         ? "confused"
         : "default"
+
+  useChatMoodSounds(chatMood)
 
   return (
     <div className="flex h-full flex-col">
