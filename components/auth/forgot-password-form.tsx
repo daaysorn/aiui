@@ -171,6 +171,8 @@ function ForgotPasswordForm() {
     password.length >= 8 &&
     confirmPassword.length >= 8 &&
     password === confirmPassword
+  const passwordsMismatch =
+    confirmPassword.length > 0 && password !== confirmPassword
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-8">
@@ -235,11 +237,13 @@ function ForgotPasswordForm() {
               }}
               required
               minLength={8}
-              aria-invalid={Boolean(fieldErrors.confirmPassword)}
+              aria-invalid={
+                passwordsMismatch || Boolean(fieldErrors.confirmPassword)
+              }
             />
-            {fieldErrors.confirmPassword ? (
+            {passwordsMismatch || fieldErrors.confirmPassword ? (
               <p className="text-xs text-destructive">
-                {fieldErrors.confirmPassword}
+                {fieldErrors.confirmPassword ?? "Passwords do not match."}
               </p>
             ) : null}
           </div>
