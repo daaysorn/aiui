@@ -52,20 +52,20 @@
 | **Role-based type**               | Body = Geist, headings = Montserrat, code = JetBrains Mono                                                            |
 | **Composable UI**                 | shadcn + Radix primitives; Magic UI registry available (`@magicui`)                                                   |
 | **Performance is visual quality** | Server-render static composition; hydrate only interaction; avoid hidden work that makes motion or feedback feel slow |
-| **No input rings**                | Inputs, textareas, selects, and OTP slots never use `ring-*`. Focus is `border-ring` only; buttons keep focus rings |
+| **No focus/active rings**         | Buttons and form fields never use `ring-*` on focus or active. Focus is `border-ring` only |
 
 ---
 
 ## Form focus (rule)
 
-Inputs and input-like surfaces **do not use focus rings**. Never add `focus-visible:ring-*`, `ring-3`, or `aria-invalid:ring-*` to `input`, `textarea`, `select`, `[data-slot="input"]`, or `[data-slot="input-otp-slot"]`.
+Buttons and form fields **do not use focus or active rings**. Never add `focus-visible:ring-*`, `active:ring-*`, `ring-3`, or `aria-invalid:ring-*` to `button`, `[data-slot="button"]`, `input`, `textarea`, `select`, `[data-slot="input"]`, or `[data-slot="input-otp-slot"]`.
 
 | Surface                      | Focus                                                                 | Invalid                           |
 | ---------------------------- | --------------------------------------------------------------------- | --------------------------------- |
 | Input, textarea, select, OTP | `focus-visible:border-ring` only (no `ring-*`)                        | `aria-invalid:border-destructive` |
-| Button and other controls    | `focus-visible:border-ring` + `focus-visible:ring-3 ring-ring/50`     | Keep existing ring if needed      |
+| Button                       | `focus-visible:border-ring` only (no `ring-*`)                        | `aria-invalid:border-destructive` |
 
-Runtime lock lives in `app/globals.css`: those input elements zero `--tw-ring-shadow`. Buttons keep theirs.
+Runtime lock lives in `app/globals.css`: those elements zero `--tw-ring-shadow` on focus and active.
 
 ---
 
@@ -181,7 +181,7 @@ Colors are defined in **OKLCH** for perceptual uniformity. They are exposed as T
 | `success`                            | `bg-success` `text-success`                | Success / safe cancel   |
 | `border`                             | `border-border`                            | Default borders         |
 | `input`                              | `border-input` `bg-input`                  | Form control edges      |
-| `ring`                               | `ring-ring`                                | Button focus rings (never on inputs) |
+| `ring`                               | `ring-ring`                                | Legacy token; buttons and fields use border-only focus, not rings |
 | `chart-1` … `chart-5`                | `bg-chart-1` …                             | Data viz scale          |
 | `sidebar*`                           | `bg-sidebar` `text-sidebar-foreground` …   | Sidebar kit (shadcn)    |
 
@@ -746,9 +746,9 @@ JavaScript animation runtime for these simple opacity/translate effects.
 | ------------------ | ------------------------------------- |
 | Default            | `transition-all`                      |
 | Active (non-popup) | `translate-y-px` (1px press)          |
-| Focus visible      | `border-ring` + `ring-3 ring-ring/50` |
+| Focus visible      | `border-ring` only (no `ring-*`)      |
 | Disabled           | `pointer-events-none opacity-50`      |
-| Invalid            | destructive border + ring             |
+| Invalid            | destructive border only               |
 
 ### 8.3 Footer socials (`components/nav/footer.tsx`)
 
@@ -1169,12 +1169,12 @@ for navigation. On dashboard and auth, use Phosphor carets (`CaretLeftIcon`,
 
 | Area           | Implementation                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------ |
-| Focus          | Buttons use `focus-visible:ring-3 ring-ring/50`. Inputs never use rings; focus is `border-ring` only |
-| Invalid forms  | `aria-invalid` → destructive **border** on inputs (no ring). Buttons may keep a destructive ring     |
+| Focus          | Buttons and form fields use `focus-visible:border-ring` only. Never use `ring-*` on focus or active |
+| Invalid forms  | `aria-invalid` → destructive **border** only (no ring) on buttons and inputs |
 | Theme hotkey   | Ignored when focus is in `input` / `textarea` / `select` / `contentEditable`               |
 | Social links   | `aria-label` on each link; tooltips as progressive enhancement                             |
 | External links | `rel="noopener noreferrer"` + `target="_blank"`                                            |
-| Link / button cursor | `a[href]`, enabled `button`, `[role="button"]`, and `[data-slot="button"]` use `cursor: pointer` |
+| Link / button cursor | Enabled `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]` use `cursor: pointer`; disabled buttons use `cursor: not-allowed` |
 | Tooltips       | Radix primitives (keyboard / focus aware)                                                  |
 | Hydration      | `suppressHydrationWarning` on `<html>` for theme class                                     |
 
@@ -1320,7 +1320,7 @@ The system is layered so branding changes never touch component code.
 | Radius      | Derivation scale (`sm`–`4xl` from `--radius`)                                                                                                                         | The `--radius` base value                           |
 | Breakpoints | The named ladder (`watch`, `xs`, `sm`–`2xl`)                                                                                                                          | The rem values per name                             |
 | Components  | Public APIs (Button variants/sizes, Tooltip parts, Dock props)                                                                                                        | Which variants a brand uses                         |
-| Motion      | Interaction rules (button focus ring, input border-only focus, press, hover lift)                                                                                     | Timing/easing values                                |
+| Motion      | Interaction rules (border-only focus, press, hover lift)                                                                                     | Timing/easing values                                |
 
 If you only change the **right column**, any site looks on-brand while behaving identically.
 
@@ -1368,7 +1368,7 @@ Portability must not break a11y. Any brand swap must still pass:
 | Large text / UI vs background     | ≥ 3:1                               |
 | `primary-foreground` on `primary` | ≥ 4.5:1                             |
 | `destructive` legibility          | ≥ 4.5:1 in both themes              |
-| Focus ring visibility             | Buttons: `ring-ring` visible. Inputs: no ring; `border-ring` on focus |
+| Focus ring visibility             | Buttons and fields: no ring; `border-ring` on focus only |
 | Not color-only meaning            | Pair with icon/label                |
 
 ### 15.6 Versioning the contract
@@ -1413,7 +1413,7 @@ This design system is exposed to AI coding agents as a **project skill** so any 
 
 ### 16.2 What the skill enforces (summary)
 
-The skill carries the non-negotiable rules (tokens-only, font roles, breakpoint ladder incl. `xs`/`watch`, radius scale, `cn()` usage, component APIs, **no input rings**) plus a pre/post build checklist. This doc remains the deep reference the skill links into.
+The skill carries the non-negotiable rules (tokens-only, font roles, breakpoint ladder incl. `xs`/`watch`, radius scale, `cn()` usage, component APIs, **no focus/active rings on buttons and fields**) plus a pre/post build checklist. This doc remains the deep reference the skill links into.
 
 Actionable links and enabled buttons always use the pointer cursor. `app/globals.css` owns the runtime default for `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]`, so this stays consistent across body links, cards, navigation, previews, and controls.
 
@@ -1461,7 +1461,7 @@ Actionable links and enabled buttons always use the pointer cursor. `app/globals
 | Feedback UI    | §3.6 muted text hierarchy; §8.7 ghost patterns, skeletons, pulse, text-shimmer (`5.5s ease-in-out`)                                                                                                                                                                                                                                  |
 | Performance UI | Added performance as a design principle; §8.1 CSS-only page reveals; §8.8 server/client boundaries, lightweight OG previews, settled skeleton behavior and reduced-motion rules                                                                                                                                                      |
 | Page OG        | §8.9 — PageLightSwiss via `createPageOgImage`; **description must stay one line** (≤72 chars, template `nowrap`); `localOpenGraphImageSrc` for automatic previews                                                                                                                                                                     |
-| Input focus    | Inputs, textareas, selects, and OTP slots have no `ring-*`. Focus uses `border-ring` only. Buttons keep rings. Locked in `app/globals.css`.                                                                                                                                                                                          |
+| Input focus    | Buttons and form fields have no `ring-*` on focus or active. Focus uses `border-ring` only. Locked in `app/globals.css`.                                                                                                                                                                                          |
 | Button loading | `<Button loading>` shows a spinner and keeps the action label. Do not use "Saving..." as the only feedback.                                                                                                                                                                                                                          |
 | Toast close    | Sonner has no X / `closeButton`. Locked in `app/globals.css`.                                                                                                                                                                                                                                                                        |
 | OTP gap        | OTP slots are separate boxes with `gap-2`.                                                                                                                                                                                                                                                                                           |

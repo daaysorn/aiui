@@ -29,12 +29,12 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 10. Merge classes with `cn()` from `@/lib/utils` — never manual string concatenation for conditional classes.
 11. Reuse existing components (`components/ui/*`) and their APIs before creating new ones. New components use CVA variants consuming tokens.
 12. Respect theming: dark is default; support light via semantic tokens, not per-color overrides. `d` key toggles theme.
-13. Accessibility is non-negotiable: visible focus on **buttons** (`ring-ring`); **inputs never use rings** (use `focus-visible:border-ring` only). `aria-label` on icon-only controls, ≥4.5:1 text contrast, external links get `rel="noopener noreferrer"`.
+13. Accessibility is non-negotiable: visible focus on **buttons and form fields** uses `focus-visible:border-ring` only (no `ring-*` on focus or active). `aria-label` on icon-only controls, ≥4.5:1 text contrast, external links get `rel="noopener noreferrer"`.
 14. Long unbroken strings (tokens, env lines, URLs, hashes) must wrap — use `min-w-0`, `break-all` / `overflow-wrap-anywhere`, and never let mono blocks overflow. See `public/doc/designSystem.md` §13.6.
 
 15. The brand name is always written as lowercase **daaysorn**, including at the beginning of a sentence and in names such as **daaysorn account** and **daaysorn-cmp**.
 16. Page body content must stay inside the shared `<main>` column used by Home: `w-full min-w-0`, with the same left and right edges. Do not use viewport-width breakout layouts, negative translation, or page-specific horizontal offsets unless the user explicitly requests a wider page.
-17. Links and enabled buttons always use a pointer cursor. The runtime enforces this globally for `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]`. Preserve that rule and use `cursor-pointer` when a component must state the behavior locally. Never leave actionable links or buttons on the default cursor.
+17. Enabled buttons and links use a pointer cursor; disabled buttons use `cursor-not-allowed`. The runtime enforces this globally for `a[href]`, `button`, `[role="button"]`, and `[data-slot="button"]`. Preserve that rule and use `cursor-pointer` when a component must state the behavior locally. Never leave actionable links or buttons on the default cursor.
 18. Keep App Router page files thin. `app/**/page.tsx` owns route concerns such as metadata, params, and revalidation, then imports the page composition from `views/`. Data loading and the full body layout belong in that view. A feature with one view uses `views/<routeName>View.tsx`, such as `views/galleryView.tsx`. As soon as a feature has more than one view file, create `views/<feature>/`, keep all of its views there, and add `views/<feature>/index.ts` to export them to the root `views/index.ts`. Rants therefore lives in `views/rants/`. Reusable or interactive sections belong in `components/<feature>/`. Do not rebuild an entire page body directly in its route file.
 19. Never use Unicode arrow glyphs such as `←`, `→`, `‹`, or `›` as navigation icons. Use Phosphor carets such as `CaretLeftIcon` and `CaretRightIcon`, paired with an accessible text label.
 20. Treat performance as part of the visual system. Static page copy and layout stay in Server Components; add the smallest practical Client Component around state, browser APIs, realtime, or gestures. Do not make a whole page client-side for one interactive detail.
@@ -43,7 +43,7 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 23. Loading feedback must preserve the final layout. Show a skeleton only while an asset has never loaded in the current session; once a preview succeeds or fails, retain that settled state and do not flash the skeleton again during ordinary hover/open cycles.
 24. **Page OG images** (via `createPageOgImage` / `renderPageOgImage` → PageLightSwiss) must keep the supporting **description on one line** — never wrap. Write short copy (roughly ≤72 characters). The template enforces `white-space: nowrap`. See `public/doc/designSystem.md` §8.9.
 25. Never use em dashes (`—`) in user-facing content. Rewrite the sentence with a period, comma, colon, or parentheses instead. This rule applies to headings, body copy, labels, descriptions, metadata, and generated editorial content.
-26. Inputs, textareas, selects, and OTP slots **never use focus rings**. Use `focus-visible:border-ring` only. Never add `focus-visible:ring-*`, `ring-3`, or `aria-invalid:ring-*` to those surfaces. Buttons keep `focus-visible:ring-3 ring-ring/50`. Runtime lock: `app/globals.css` zeros `--tw-ring-shadow` on input surfaces.
+26. Buttons and form fields **never use focus or active rings**. Use `focus-visible:border-ring` only. Never add `focus-visible:ring-*`, `active:ring-*`, `ring-3`, or `aria-invalid:ring-*` to buttons, inputs, textareas, selects, or OTP slots. Runtime lock: `app/globals.css` zeros `--tw-ring-shadow` on those surfaces for focus and active.
 27. Loading actions use `<Button loading>`. The button shows a `Spinner`, sets `aria-busy`, and disables itself. Keep the action label. Do not replace the label with "Saving..." / "Creating..." as the only loading feedback.
 28. Sonner toasts have **no close (X) button**. Never pass `closeButton`. Toasts dismiss by timeout or swipe. Runtime lock: `app/globals.css` hides `[data-close-button]`.
 29. Dashboard icons are **Phosphor only** (`@phosphor-icons/react`). Do not use `lucide-react` or `react-icons` in `components/dashboard/*`, `views/dashboard/*`, or dashboard chrome (sidebar, overview chat). Auth already uses Phosphor; keep that set.
@@ -52,8 +52,8 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 
 | Surface                      | Focus                                                             | Invalid                           |
 | ---------------------------- | ----------------------------------------------------------------- | --------------------------------- |
-| Input, textarea, select, OTP | `focus-visible:border-ring` only                                  | `aria-invalid:border-destructive` |
-| Button and other controls    | `focus-visible:border-ring` + `focus-visible:ring-3 ring-ring/50` | Keep existing ring if needed      |
+| Input, textarea, select, OTP | `focus-visible:border-ring` only (no `ring-*`)                    | `aria-invalid:border-destructive` |
+| Button                       | `focus-visible:border-ring` only (no `ring-*`)                    | `aria-invalid:border-destructive` |
 
 ## Token → utility quick map
 
@@ -70,7 +70,7 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 | Brand emphasis        | `text-primary font-semibold`                            |
 | Borders / inputs      | `border-border` / `border-input`                        |
 | Input focus           | `focus-visible:border-ring` only (never `ring-*`)       |
-| Button focus ring     | `ring-ring` (already on Button)                         |
+| Button focus          | `focus-visible:border-ring` only (never `ring-*`)       |
 | Loading button        | `<Button loading>` (spinner + keep the label)           |
 | Danger                | `variant="destructive"` / `text-destructive`            |
 | Success               | `text-success` / `bg-success`                           |
@@ -133,7 +133,7 @@ After writing UI:
 ```
 - [ ] No hard-coded hex/oklch/px colors
 - [ ] Classes merged with cn(); conditional classes clean
-- [ ] Inputs have no focus ring (`border-ring` only); buttons keep `ring-ring`
+- [ ] Buttons and form fields have no focus/active ring (`border-ring` only)
 - [ ] Loading actions use `<Button loading>` (spinner + original label, not "Saving..." alone)
 - [ ] Toasts have no close (X) button
 - [ ] Focus visible on buttons + aria-labels on icon-only controls
@@ -166,7 +166,7 @@ Same system, swap **token values only** (keep token names + component APIs). `ap
 | Motion / ghost / loaders / previews / OG | §8 (incl. §8.7–§8.9)               |
 | Theming (light/dark)                    | §9                                 |
 | Component variants/APIs                 | §10                                |
-| Form focus / input rings                | Form focus (rule) + §12            |
+| Form focus / no rings                   | Form focus (rule) + §12            |
 | Loading buttons / toasts                | §10.1 Button loading + §10.8       |
 | Accessibility                           | §12                                |
 | Recipes                                 | §13 (incl. §13.6 long-string wrap) |

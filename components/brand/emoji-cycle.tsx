@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Lottie } from "lottie-react"
+import { Lottie, type LottieHandle } from "lottie-react"
 
 import { cn } from "@/lib/utils"
 
@@ -152,11 +152,22 @@ function BrandEmojiCycle({ className }: { className?: string }) {
 }
 
 function GreetingEmoji({ className }: { className?: string }) {
+  const lottieRef = useRef<LottieHandle>(null)
   const [period, setPeriod] = useState<GreetingPeriod | null>(null)
+  const [data, setData] = useState<object | null>(null)
   const [reduceMotion, setReduceMotion] = useState(false)
+  const [paused, setPaused] = useState(false)
 
   useEffect(() => {
-    setPeriod(greetingPeriod())
+    const next = greetingPeriod()
+    setPeriod(next)
+    let cancelled = false
+    void loadAnimation(GREETING_SOURCES[next]).then((animation) => {
+      if (!cancelled) setData(animation)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -167,24 +178,41 @@ function GreetingEmoji({ className }: { className?: string }) {
     return () => media.removeEventListener("change", sync)
   }, [])
 
+  function togglePlayback() {
+    const lottie = lottieRef.current
+    if (paused) {
+      setPaused(false)
+      lottie?.play()
+      return
+    }
+    setPaused(true)
+    lottie?.pause()
+  }
+
+  const label = period ?? "daaybot"
+
   return (
-    <span
+    <button
+      type="button"
       className={cn(
-        "relative size-7 shrink-0 overflow-hidden contain-[size]",
+        "relative isolate size-7 shrink-0 overflow-hidden bg-transparent p-0 contain-[size]",
         className
       )}
-      aria-hidden
+      aria-label={paused ? `Play ${label}` : `Pause ${label}`}
+      aria-pressed={paused}
+      onClick={togglePlayback}
     >
-      {period ? (
+      {data ? (
         <Lottie
           as="span"
-          src={GREETING_SOURCES[period]}
+          src={data}
+          lottieRef={lottieRef}
           autoplay={!reduceMotion}
-          loop={false}
-          className="absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent"
+          loop={!reduceMotion && !paused}
+          className="pointer-events-none absolute inset-0 block size-full min-h-0 min-w-0 bg-transparent [&_svg]:block [&_svg]:size-full [&_svg]:bg-transparent"
         />
       ) : null}
-    </span>
+    </button>
   )
 }
 

@@ -5,15 +5,11 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import {
   BuildingsIcon,
+  CaretDownIcon,
   CheckCircleIcon,
-  ClockIcon,
   CrownIcon,
-  GlobeIcon,
-  LightningIcon,
   RocketLaunchIcon,
-  SparkleIcon,
   UserIcon,
-  UsersThreeIcon,
   type IconProps,
 } from "@phosphor-icons/react"
 import { toast } from "sonner"
@@ -43,32 +39,6 @@ import { cn } from "@/lib/utils"
 
 type PhosphorIcon = ElementType<IconProps>
 
-function featureIcon(text: string): PhosphorIcon {
-  const value = text.toLowerCase()
-  if (value.includes("organisation") || value.includes("organization")) {
-    return BuildingsIcon
-  }
-  if (value.includes("team") || value.includes("member") || value.includes("seat")) {
-    return UsersThreeIcon
-  }
-  if (value.includes("extra") || value.includes("early")) {
-    return LightningIcon
-  }
-  if (value.includes("usage")) {
-    return ClockIcon
-  }
-  if (value.includes("publish") || value.includes("preview")) {
-    return GlobeIcon
-  }
-  if (value.includes("personal")) {
-    return UserIcon
-  }
-  if (value.includes("everything") || value.includes("builder")) {
-    return SparkleIcon
-  }
-  return CheckCircleIcon
-}
-
 function planIcon(plan: BillingPlan): PhosphorIcon {
   if (isFreePlan(plan)) {
     return UserIcon
@@ -82,21 +52,42 @@ function planIcon(plan: BillingPlan): PhosphorIcon {
   return RocketLaunchIcon
 }
 
-function planTitle(plan: BillingPlan) {
+function planLabel(plan: BillingPlan) {
   if (isFreePlan(plan)) {
     return plan.name
   }
   return `Daaybot ${plan.name}`
 }
 
+function planIntervalLabel(interval: string) {
+  return interval.replace(/^\/\s*/, "per ")
+}
+
+function planSummary(plan: BillingPlan) {
+  if (plan.description?.trim()) {
+    return plan.description.trim()
+  }
+
+  const parts: string[] = []
+  if (plan.includedCredits > 0) {
+    parts.push(
+      `${new Intl.NumberFormat().format(plan.includedCredits)} credits/mo`
+    )
+  }
+  if (plan.minSeats > 0) {
+    parts.push(`${plan.minSeats} seat minimum`)
+  }
+  return parts.join(" · ") || "Monthly Daaybot access"
+}
+
 function planCta(plan: BillingPlan, current: boolean) {
   if (current) {
-    return "Your current plan"
+    return "Current plan"
   }
   if (isFreePlan(plan)) {
-    return "Stay on Free"
+    return "Included"
   }
-  return `Upgrade to ${plan.name}`
+  return "Upgrade"
 }
 
 export function PlansDialog({
@@ -120,10 +111,6 @@ export function PlansDialog({
   const visible = useMemo(() => {
     return (plans ?? []).filter((plan) => plan.audience === audience)
   }, [audience, plans])
-
-  const hasBusinessPlans = (plans ?? []).some(
-    (plan) => plan.audience === "organization"
-  )
 
   async function handleSelect(plan: BillingPlan) {
     if (isCurrentPlan(plan, currentSlug) || isFreePlan(plan) || attaching) {
@@ -160,66 +147,59 @@ export function PlansDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90dvh,44rem)] overflow-y-auto bg-background p-4 sm:max-w-4xl sm:p-6">
+      <DialogContent className="max-h-[min(90dvh,40rem)] gap-5 overflow-y-auto p-5 sm:max-w-4xl">
         <DialogHeader className="items-center gap-1 pr-8 text-center">
-          <DialogTitle className="font-heading text-lg font-semibold tracking-tight xs:text-xl">
-            See what&apos;s new with Daaybot
+          <DialogTitle className="font-heading text-lg font-semibold tracking-tight">
+            Choose a plan
           </DialogTitle>
-          <DialogDescription>Pick a monthly plan</DialogDescription>
+          <DialogDescription>Pick your monthly plan</DialogDescription>
         </DialogHeader>
 
-        <div className="mx-auto flex w-fit rounded-full bg-muted p-0.5">
-          <button
-            type="button"
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors",
-              audience === "individual"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            aria-pressed={audience === "individual"}
-            onClick={() => setAudience("individual")}
-          >
-            <UserIcon className="size-3.5" weight="duotone" aria-hidden />
-            Personal
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors",
-              audience === "organization"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-            aria-pressed={audience === "organization"}
-            onClick={() => setAudience("organization")}
-          >
-            <BuildingsIcon className="size-3.5" weight="duotone" aria-hidden />
-            Business
-          </button>
+        <div className="mx-auto grid w-full max-w-xs grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+          {(
+            [
+              ["individual", "Personal"],
+              ["organization", "Business"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                audience === value
+                  ? "bg-background text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-pressed={audience === value}
+              onClick={() => setAudience(value)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {isPending ? (
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            <Skeleton className="h-56 rounded-xl" />
-            <Skeleton className="h-56 rounded-xl" />
-            <Skeleton className="hidden h-56 rounded-xl lg:block" />
+          <div className="grid grid-cols-2 gap-3 xs:grid-cols-3">
+            <Skeleton className="h-52 rounded-xl" />
+            <Skeleton className="h-52 rounded-xl" />
+            <Skeleton className="h-52 rounded-xl max-xs:col-span-2 max-xs:mx-auto max-xs:max-w-44" />
           </div>
         ) : isError ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-4 text-center text-sm text-muted-foreground">
             Could not load plans.
           </p>
         ) : visible.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <p className="py-4 text-center text-sm text-muted-foreground">
             No plans in this tab.
           </p>
         ) : (
-          <div
+          <ul
             className={cn(
-              "grid gap-2.5",
-              visible.length === 1 && "mx-auto w-full max-w-xs grid-cols-1",
-              visible.length === 2 && "sm:grid-cols-2",
-              visible.length >= 3 && "sm:grid-cols-2 lg:grid-cols-3"
+              "grid gap-3",
+              visible.length === 1 && "mx-auto max-w-44 grid-cols-1",
+              visible.length === 2 && "grid-cols-2",
+              visible.length >= 3 && "grid-cols-2 xs:grid-cols-3"
             )}
           >
             {visible.map((plan) => {
@@ -228,103 +208,95 @@ export function PlansDialog({
               const price = formatPlanPrice(plan)
               const busy = attaching === plan.slug
               const TierIcon = planIcon(plan)
+              const hasFeatures = plan.features.length > 0
 
               return (
-                <article
-                  key={plan.slug}
-                  className={cn(
-                    "relative flex min-w-0 flex-col gap-3 rounded-xl bg-muted p-4",
-                    recommended && "bg-card ring-1 ring-primary/60"
-                  )}
-                >
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div
+                <li key={plan.slug} className="min-w-0">
+                  <article
+                    className={cn(
+                      "flex h-full min-w-0 flex-col rounded-xl p-4",
+                      current && "bg-muted/50",
+                      !current && recommended && "bg-card",
+                      !current && !recommended && "bg-muted"
+                    )}
+                  >
+                    <TierIcon
                       className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg bg-background",
-                        recommended && "text-primary"
+                        "size-5 shrink-0",
+                        recommended ? "text-primary" : "text-muted-foreground"
                       )}
-                    >
-                      <TierIcon className="size-5" weight="duotone" aria-hidden />
-                    </div>
+                      weight="duotone"
+                      aria-hidden
+                    />
 
-                    <div className="min-w-0 flex flex-1 flex-col gap-0.5">
-                      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-                        <h3 className="font-heading text-base font-semibold leading-tight tracking-tight">
-                          {planTitle(plan)}
-                        </h3>
-                        {recommended ? (
-                          <span className="rounded-full bg-primary/10 px-1.5 py-px text-[10px] font-medium tracking-wide text-primary uppercase">
-                            Recommended
-                          </span>
-                        ) : null}
-                        {current ? (
-                          <span className="rounded-full bg-background px-1.5 py-px text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                            Current
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
-                        {plan.description ?? "Monthly Daaybot access"}
-                      </p>
-                    </div>
-                  </div>
+                    <h3 className="mt-3 font-heading text-base font-semibold leading-tight tracking-tight">
+                      {planLabel(plan)}
+                    </h3>
 
-                  <div className="flex min-w-0 items-center gap-2">
-                    <p className="min-w-0 shrink-0 text-xl font-semibold tracking-tight break-all">
-                      {price.amount}
-                      <span className="ml-0.5 text-xs font-normal text-muted-foreground">
-                        {price.interval}
+                    <p className="mt-2 leading-none">
+                      <span className="text-2xl font-semibold tracking-tight break-all">
+                        {price.amount}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {planIntervalLabel(price.interval)}
                       </span>
                     </p>
+
+                    <p className="mt-2 line-clamp-2 min-h-8 text-xs leading-snug text-muted-foreground">
+                      {planSummary(plan)}
+                    </p>
+
                     <Button
-                      className="ml-auto min-w-0 flex-1"
+                      className="mt-4 w-full"
                       size="sm"
-                      variant={recommended ? "default" : "secondary"}
-                      disabled={current || isFreePlan(plan) || Boolean(attaching)}
+                      variant={
+                        current
+                          ? "secondary"
+                          : recommended
+                            ? "default"
+                            : "secondary"
+                      }
+                      disabled={
+                        current || isFreePlan(plan) || Boolean(attaching)
+                      }
                       loading={busy}
                       onClick={() => void handleSelect(plan)}
                     >
                       {planCta(plan, current)}
                     </Button>
-                  </div>
 
-                  <ul className="flex flex-col gap-1.5">
-                    {plan.features.map((feature) => {
-                      const Icon = featureIcon(feature)
-                      return (
-                        <li
-                          key={feature}
-                          className="flex min-w-0 items-start gap-2 text-xs leading-snug"
-                        >
-                          <Icon
-                            className={cn(
-                              "mt-px size-3.5 shrink-0",
-                              recommended ? "text-primary" : "text-muted-foreground"
-                            )}
-                            weight={Icon === CheckCircleIcon ? "fill" : "duotone"}
+                    {hasFeatures ? (
+                      <details className="group mt-auto pt-3">
+                        <summary className="flex cursor-pointer list-none items-center gap-1 text-xs text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                          <CaretDownIcon
+                            className="size-3.5 shrink-0 transition-transform group-open:rotate-180"
                             aria-hidden
                           />
-                          <span className="min-w-0">{feature}</span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </article>
+                          {plan.features.length} included
+                        </summary>
+                        <ul className="mt-2 space-y-1.5">
+                          {plan.features.map((feature) => (
+                            <li
+                              key={feature}
+                              className="flex min-w-0 items-start gap-2 text-xs leading-snug text-muted-foreground"
+                            >
+                              <CheckCircleIcon
+                                className="mt-0.5 size-3 shrink-0 text-primary/80"
+                                weight="fill"
+                                aria-hidden
+                              />
+                              <span className="min-w-0">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : null}
+                  </article>
+                </li>
               )
             })}
-          </div>
+          </ul>
         )}
-
-        {audience === "individual" && hasBusinessPlans ? (
-          <button
-            type="button"
-            className="mx-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setAudience("organization")}
-          >
-            <BuildingsIcon className="size-3.5" weight="duotone" aria-hidden />
-            Need more for business?
-          </button>
-        ) : null}
       </DialogContent>
     </Dialog>
   )
