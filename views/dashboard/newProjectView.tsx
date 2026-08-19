@@ -48,7 +48,7 @@ export function NewProjectView() {
             name="brief"
             rows={4}
             maxLength={8000}
-            className="flex min-h-24 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex min-h-24 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-2 text-sm shadow-xs outline-none focus-visible:border-ring"
           />
         </div>
         <Button type="submit" disabled={pending}>

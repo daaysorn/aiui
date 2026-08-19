@@ -29,7 +29,7 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 10. Merge classes with `cn()` from `@/lib/utils` — never manual string concatenation for conditional classes.
 11. Reuse existing components (`components/ui/*`) and their APIs before creating new ones. New components use CVA variants consuming tokens.
 12. Respect theming: dark is default; support light via semantic tokens, not per-color overrides. `d` key toggles theme.
-13. Accessibility is non-negotiable: visible focus (`ring-ring`), `aria-label` on icon-only controls, ≥4.5:1 text contrast, external links get `rel="noopener noreferrer"`.
+13. Accessibility is non-negotiable: visible focus on **buttons** (`ring-ring`); **inputs never use rings** (use `focus-visible:border-ring` only). `aria-label` on icon-only controls, ≥4.5:1 text contrast, external links get `rel="noopener noreferrer"`.
 14. Long unbroken strings (tokens, env lines, URLs, hashes) must wrap — use `min-w-0`, `break-all` / `overflow-wrap-anywhere`, and never let mono blocks overflow. See `public/doc/designSystem.md` §13.6.
 
 15. The brand name is always written as lowercase **daaysorn**, including at the beginning of a sentence and in names such as **daaysorn account** and **daaysorn-cmp**.
@@ -43,6 +43,14 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 23. Loading feedback must preserve the final layout. Show a skeleton only while an asset has never loaded in the current session; once a preview succeeds or fails, retain that settled state and do not flash the skeleton again during ordinary hover/open cycles.
 24. **Page OG images** (via `createPageOgImage` / `renderPageOgImage` → PageLightSwiss) must keep the supporting **description on one line** — never wrap. Write short copy (roughly ≤72 characters). The template enforces `white-space: nowrap`. See `public/doc/designSystem.md` §8.9.
 25. Never use em dashes (`—`) in user-facing content. Rewrite the sentence with a period, comma, colon, or parentheses instead. This rule applies to headings, body copy, labels, descriptions, metadata, and generated editorial content.
+26. Inputs, textareas, selects, and OTP slots **never use focus rings**. Use `focus-visible:border-ring` only. Never add `focus-visible:ring-*`, `ring-3`, or `aria-invalid:ring-*` to those surfaces. Buttons keep `focus-visible:ring-3 ring-ring/50`. Runtime lock: `app/globals.css` zeros `--tw-ring-shadow` on input surfaces.
+
+## Form focus
+
+| Surface                      | Focus                                                             | Invalid                           |
+| ---------------------------- | ----------------------------------------------------------------- | --------------------------------- |
+| Input, textarea, select, OTP | `focus-visible:border-ring` only                                  | `aria-invalid:border-destructive` |
+| Button and other controls    | `focus-visible:border-ring` + `focus-visible:ring-3 ring-ring/50` | Keep existing ring if needed      |
 
 ## Token → utility quick map
 
@@ -58,7 +66,8 @@ Read the relevant doc section before non-trivial UI work (progressive disclosure
 | Live pulse            | `motion-safe:animate-pulse` / `animate-music-pulse`     |
 | Brand emphasis        | `text-primary font-semibold`                            |
 | Borders / inputs      | `border-border` / `border-input`                        |
-| Focus ring            | `ring-ring` (buttons already handle it)                 |
+| Input focus           | `focus-visible:border-ring` only (never `ring-*`)       |
+| Button focus ring     | `ring-ring` (already on Button)                         |
 | Danger                | `variant="destructive"` / `text-destructive`            |
 | Success               | `text-success` / `bg-success`                           |
 | Actionable link       | `cursor-pointer` (also enforced globally for `a[href]`) |
@@ -91,6 +100,9 @@ import { Button } from "@/components/ui/button"
 <Button variant="default|outline|secondary|ghost|destructive|link" size="default|xs|sm|lg|icon|icon-xs|icon-sm|icon-lg" />
 <Button asChild><Link href="/x">Go</Link></Button>
 
+import { Input } from "@/components/ui/input"
+<Input /> // focus: border-ring only, never ring-*
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dock, DockIcon } from "@/components/ui/dock"
 ```
@@ -113,7 +125,8 @@ After writing UI:
 ```
 - [ ] No hard-coded hex/oklch/px colors
 - [ ] Classes merged with cn(); conditional classes clean
-- [ ] Focus visible + aria-labels on icon-only controls
+- [ ] Inputs have no focus ring (`border-ring` only); buttons keep `ring-ring`
+- [ ] Focus visible on buttons + aria-labels on icon-only controls
 - [ ] Every actionable link uses the pointer cursor
 - [ ] Renders in light AND dark (semantic tokens only)
 - [ ] Reads well at base width (iPhone 12 = base + xs:)
@@ -143,6 +156,7 @@ Same system, swap **token values only** (keep token names + component APIs). `ap
 | Motion / ghost / loaders / previews / OG | §8 (incl. §8.7–§8.9)               |
 | Theming (light/dark)                    | §9                                 |
 | Component variants/APIs                 | §10                                |
+| Form focus / input rings                | Form focus (rule) + §12            |
 | Accessibility                           | §12                                |
 | Recipes                                 | §13 (incl. §13.6 long-string wrap) |
 | Add token/font/component                | §14                                |

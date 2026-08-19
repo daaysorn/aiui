@@ -17,6 +17,7 @@
 ## Table of contents
 
 1. [Principles](#1-principles)
+   - [Form focus (rule)](#form-focus-rule)
 2. [Architecture & file map](#2-architecture--file-map)
 3. [Color system](#3-color-system)
    - [3.6 Muted text & quiet chrome](#36-muted-text--quiet-chrome)
@@ -51,12 +52,20 @@
 | **Role-based type**               | Body = Geist, headings = Montserrat, code = JetBrains Mono                                                            |
 | **Composable UI**                 | shadcn + Radix primitives; Magic UI registry available (`@magicui`)                                                   |
 | **Performance is visual quality** | Server-render static composition; hydrate only interaction; avoid hidden work that makes motion or feedback feel slow |
+| **No input rings**                | Inputs, textareas, selects, and OTP slots never use `ring-*`. Focus is `border-ring` only; buttons keep focus rings |
 
 ---
 
 ## Form focus (rule)
 
-Inputs and textareas do not use focus rings. The system relies on layout, spacing, and subtle surface contrast (border/background) instead of `ring-*` shadows on focus. Avoid adding `focus-visible:ring-*` to inputs, textareas, or input-like surfaces.
+Inputs and input-like surfaces **do not use focus rings**. Never add `focus-visible:ring-*`, `ring-3`, or `aria-invalid:ring-*` to `input`, `textarea`, `select`, `[data-slot="input"]`, or `[data-slot="input-otp-slot"]`.
+
+| Surface                      | Focus                                                                 | Invalid                           |
+| ---------------------------- | --------------------------------------------------------------------- | --------------------------------- |
+| Input, textarea, select, OTP | `focus-visible:border-ring` only (no `ring-*`)                        | `aria-invalid:border-destructive` |
+| Button and other controls    | `focus-visible:border-ring` + `focus-visible:ring-3 ring-ring/50`     | Keep existing ring if needed      |
+
+Runtime lock lives in `app/globals.css`: those input elements zero `--tw-ring-shadow`. Buttons keep theirs.
 
 ---
 
@@ -75,6 +84,8 @@ components/
     index.ts
   ui/
     button.tsx         ← CVA button system
+    input.tsx          ← text field (border focus only, no ring)
+    input-otp.tsx      ← OTP slots (border-ring when active, no ring)
     tooltip.tsx        ← Radix tooltip
     dock.tsx           ← Magic UI–style magnifying dock
 views/
@@ -168,7 +179,7 @@ Colors are defined in **OKLCH** for perceptual uniformity. They are exposed as T
 | `success`                            | `bg-success` `text-success`                | Success / safe cancel   |
 | `border`                             | `border-border`                            | Default borders         |
 | `input`                              | `border-input` `bg-input`                  | Form control edges      |
-| `ring`                               | `ring-ring`                                | Focus rings             |
+| `ring`                               | `ring-ring`                                | Button focus rings (never on inputs) |
 | `chart-1` … `chart-5`                | `bg-chart-1` …                             | Data viz scale          |
 | `sidebar*`                           | `bg-sidebar` `text-sidebar-foreground` …   | Sidebar kit (shadcn)    |
 
@@ -1108,6 +1119,12 @@ destination.
 
 ---
 
+### 10.7 Input — `components/ui/input.tsx`
+
+Text fields use `border-input` at rest and `focus-visible:border-ring` when focused. **No `ring-*`.** Invalid state is `aria-invalid:border-destructive` only. OTP slots (`input-otp.tsx`) follow the same rule: active slot is `border-ring`, never `ring-3`. See [Form focus (rule)](#form-focus-rule).
+
+---
+
 ## 11. Icons
 
 | Source                      | Where                           | Notes                                         |
@@ -1130,8 +1147,8 @@ for navigation. Use `react-icons` caret/chevron components (`PiCaretLeftBold`,
 
 | Area           | Implementation                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------ |
-| Focus          | Buttons use `focus-visible:ring-3 ring-ring/50`                                            |
-| Invalid forms  | `aria-invalid` → destructive ring/border                                                   |
+| Focus          | Buttons use `focus-visible:ring-3 ring-ring/50`. Inputs never use rings; focus is `border-ring` only |
+| Invalid forms  | `aria-invalid` → destructive **border** on inputs (no ring). Buttons may keep a destructive ring     |
 | Theme hotkey   | Ignored when focus is in `input` / `textarea` / `select` / `contentEditable`               |
 | Social links   | `aria-label` on each link; tooltips as progressive enhancement                             |
 | External links | `rel="noopener noreferrer"` + `target="_blank"`                                            |
@@ -1281,7 +1298,7 @@ The system is layered so branding changes never touch component code.
 | Radius      | Derivation scale (`sm`–`4xl` from `--radius`)                                                                                                                         | The `--radius` base value                           |
 | Breakpoints | The named ladder (`watch`, `xs`, `sm`–`2xl`)                                                                                                                          | The rem values per name                             |
 | Components  | Public APIs (Button variants/sizes, Tooltip parts, Dock props)                                                                                                        | Which variants a brand uses                         |
-| Motion      | Interaction rules (focus ring, press, hover lift)                                                                                                                     | Timing/easing values                                |
+| Motion      | Interaction rules (button focus ring, input border-only focus, press, hover lift)                                                                                     | Timing/easing values                                |
 
 If you only change the **right column**, any site looks on-brand while behaving identically.
 
@@ -1329,7 +1346,7 @@ Portability must not break a11y. Any brand swap must still pass:
 | Large text / UI vs background     | ≥ 3:1                               |
 | `primary-foreground` on `primary` | ≥ 4.5:1                             |
 | `destructive` legibility          | ≥ 4.5:1 in both themes              |
-| Focus ring visibility             | `ring-ring` visible on all surfaces |
+| Focus ring visibility             | Buttons: `ring-ring` visible. Inputs: no ring; `border-ring` on focus |
 | Not color-only meaning            | Pair with icon/label                |
 
 ### 15.6 Versioning the contract
@@ -1374,7 +1391,7 @@ This design system is exposed to AI coding agents as a **project skill** so any 
 
 ### 16.2 What the skill enforces (summary)
 
-The skill carries the non-negotiable rules (tokens-only, font roles, breakpoint ladder incl. `xs`/`watch`, radius scale, `cn()` usage, component APIs) plus a pre/post build checklist. This doc remains the deep reference the skill links into.
+The skill carries the non-negotiable rules (tokens-only, font roles, breakpoint ladder incl. `xs`/`watch`, radius scale, `cn()` usage, component APIs, **no input rings**) plus a pre/post build checklist. This doc remains the deep reference the skill links into.
 
 Actionable links always use the pointer cursor. `app/globals.css` owns the
 runtime default through `a[href] { cursor: pointer; }`, so this behavior remains
@@ -1424,6 +1441,7 @@ consistent across body links, cards, navigation, previews, and social links.
 | Feedback UI    | §3.6 muted text hierarchy; §8.7 ghost patterns, skeletons, pulse, text-shimmer (`5.5s ease-in-out`)                                                                                                                                                                                                                                  |
 | Performance UI | Added performance as a design principle; §8.1 CSS-only page reveals; §8.8 server/client boundaries, lightweight OG previews, settled skeleton behavior and reduced-motion rules                                                                                                                                                      |
 | Page OG        | §8.9 — PageLightSwiss via `createPageOgImage`; **description must stay one line** (≤72 chars, template `nowrap`); `localOpenGraphImageSrc` for automatic previews                                                                                                                                                                     |
+| Input focus    | Inputs, textareas, selects, and OTP slots have no `ring-*`. Focus uses `border-ring` only. Buttons keep rings. Locked in `app/globals.css`.                                                                                                                                                                                          |
 
 ---
 
