@@ -9,6 +9,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Use Montserrat for headings, Geist for body/paragraph text, and JetBrains Mono for code.
 - Always write the brand name as lowercase `daaysorn`, including at the beginning of sentences.
 - Page Open Graph descriptions/subtitles must stay on one line (short; no multi-line marketing copy under the title).
+- Form/page subtitles (the muted helper text under a heading) must be 4-6 words max — no long marketing copy.
 - Never use em dashes in user-facing content.
 - Long unbroken strings (tokens, URLs, env lines, hashes) must wrap: `min-w-0` with `break-all` / `overflow-wrap-anywhere`.
 

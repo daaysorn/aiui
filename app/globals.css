@@ -262,6 +262,11 @@
   }
 }
 
+/* Form field label sits 6px above its input — a bit more breathing room than the default 4px. */
+:where(label + input, label + textarea, label + select, label + [data-slot="input"]) {
+  margin-top: 0.375rem;
+}
+
 /* Links and enabled buttons always use a pointer cursor. */
 a[href],
 button:not(:disabled),
