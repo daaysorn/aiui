@@ -29,7 +29,36 @@ export function resolveSocialAuthErrorMessage(
     return "Sign in expired. Please try again."
   }
 
-  return codes.length > 0 ? fallback : fallback
+  if (
+    normalized.includes("missing_token") ||
+    normalized.includes("missing token")
+  ) {
+    return "Social sign in could not finish. Try again."
+  }
+
+  if (
+    normalized.includes("invalid_code") ||
+    normalized.includes("invalid_token")
+  ) {
+    return "Social sign in failed. Start again from the sign-in page."
+  }
+
+  if (
+    normalized.includes("email_not_verified") ||
+    normalized.includes("email not verified")
+  ) {
+    return "Verify your email before using social sign in."
+  }
+
+  if (normalized.includes("signup_disabled") || normalized.includes("sign_up_disabled")) {
+    return "Social sign up is not available. Use email instead."
+  }
+
+  if (codes.length > 0) {
+    return fallback
+  }
+
+  return fallback
 }
 
 export function buildSocialAuthErrorPath(
