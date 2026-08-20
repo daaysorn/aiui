@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState, useTransition } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { SidebarBotIcon } from "@/components/brand/sidebar-bot-icon"
 import {
   BuildingsIcon,
   DotsThreeIcon,
@@ -13,6 +12,7 @@ import {
   FolderPlusIcon,
   HashIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlugsIcon,
   PuzzlePieceIcon,
   TrashIcon,
@@ -58,7 +58,7 @@ import { queryKeys } from "@/lib/query/keys"
 import { cn } from "@/lib/utils"
 
 const primaryNav = [
-  { href: "/dashboard", label: "New bot", icon: SidebarBotIcon, exact: true },
+  { href: "/dashboard", label: "New bot", icon: PencilSimpleIcon, exact: true },
   { href: "/dashboard/search", label: "Search chat", icon: MagnifyingGlassIcon, exact: true },
   { href: "/dashboard/plugins", label: "Plugins", icon: PuzzlePieceIcon, exact: true },
   { href: "/dashboard/mcps", label: "MCPs", icon: PlugsIcon, exact: true },
@@ -72,18 +72,14 @@ function NavButton({
 }: {
   href: string
   label: string
-  icon?: Icon | typeof SidebarBotIcon
+  icon?: Icon
   isActive: boolean
 }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton isActive={isActive} render={<Link href={href} />}>
         {IconComponent ? (
-          IconComponent === SidebarBotIcon ? (
-            <SidebarBotIcon />
-          ) : (
-            <IconComponent weight={isActive ? "fill" : "duotone"} />
-          )
+          <IconComponent weight={isActive ? "fill" : "duotone"} />
         ) : null}
         <span>{label}</span>
       </SidebarMenuButton>

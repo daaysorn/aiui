@@ -25,8 +25,7 @@ import {
   ChatComposer,
   type ComposerFile,
 } from "@/components/dashboard/chat-composer"
-import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
-import { Button } from "@/components/ui/button"
+import { ChatWindowSkeleton, DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Marker, MarkerContent } from "@/components/ui/marker"
 import {
@@ -89,7 +88,6 @@ function OverviewChatPanel({
   firstName,
   threadId,
   showSuggestions = false,
-  onNewConversation,
   onThreadCreated,
 }: {
   userId: string
@@ -97,13 +95,12 @@ function OverviewChatPanel({
   firstName: string
   threadId: string | null
   showSuggestions?: boolean
-  onNewConversation: () => void
   onThreadCreated: (threadId: string) => void
 }) {
   const bootstrap = useDashboardChatBootstrap({ userId, threadId })
 
   if (!bootstrap.ready) {
-    return <DashboardSkeleton />
+    return <ChatWindowSkeleton />
   }
 
   return (
@@ -114,7 +111,6 @@ function OverviewChatPanel({
       threadId={threadId}
       initial={bootstrap.initial}
       showSuggestions={showSuggestions}
-      onNewConversation={onNewConversation}
       onThreadCreated={onThreadCreated}
     />
   )
@@ -127,7 +123,6 @@ function OverviewChatPanelInner({
   threadId,
   initial,
   showSuggestions = false,
-  onNewConversation,
   onThreadCreated,
 }: {
   userId: string
@@ -136,7 +131,6 @@ function OverviewChatPanelInner({
   threadId: string | null
   initial: Parameters<typeof useDashboardChat>[0]["initial"]
   showSuggestions?: boolean
-  onNewConversation: () => void
   onThreadCreated: (threadId: string) => void
 }) {
   const {
@@ -274,7 +268,7 @@ function OverviewChatPanelInner({
 
   return (
     <TooltipProvider>
-      <div className="flex h-full flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {!hasMessages ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
@@ -317,20 +311,9 @@ function OverviewChatPanelInner({
             </div>
           ) : (
             <MessageScrollerProvider autoScroll>
-              <MessageScroller className="flex-1">
+              <MessageScroller className="min-h-0 flex-1">
                 <MessageScrollerViewport className="px-4 py-4">
                   <MessageScrollerContent className="mx-auto max-w-2xl">
-                    <div className="mb-3 flex justify-end">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={onNewConversation}
-                        disabled={isBusy}
-                      >
-                        New conversation
-                      </Button>
-                    </div>
                     <Marker variant="separator">
                       <MarkerContent>Today</MarkerContent>
                     </Marker>
@@ -564,12 +547,6 @@ export function OverviewView({
         skipUrlThreadSyncRef.current = true
         setActiveThreadId(id)
         router.replace(`/dashboard?thread=${id}`, { scroll: false })
-      }}
-      onNewConversation={() => {
-        skipUrlThreadSyncRef.current = true
-        setActiveThreadId(null)
-        router.replace("/dashboard", { scroll: false })
-        setSessionEpoch((value) => value + 1)
       }}
     />
   )

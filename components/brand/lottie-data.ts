@@ -4,12 +4,12 @@ import greetingAfternoon from "@/public/lottie/greeting-afternoon.json"
 import greetingEvening from "@/public/lottie/greeting-evening.json"
 import greetingMorning from "@/public/lottie/greeting-morning.json"
 import headShake from "@/public/lottie/head-shake.json"
-import newBot from "@/public/lottie/new-bot.json"
 import sad from "@/public/lottie/sad.json"
 import thinking from "@/public/lottie/thinking.json"
 import wink from "@/public/lottie/wink.json"
 
-export const brandCycleEmojis = [wink, headShake, faceInClouds] as const
+/** Noto face-in-clouds — primary Daaybot logo mark. */
+export const brandLogoEmoji = faceInClouds
 
 export const greetingEmojis = {
   morning: greetingMorning,
@@ -24,5 +24,3 @@ export const chatEmojiData = {
   sad,
   confused,
 } as const
-
-export const sidebarBotEmoji = newBot
