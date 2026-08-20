@@ -16,15 +16,13 @@ import {
 
 import { AccountPanel } from "@/components/dashboard/account-panel"
 import { AdvancedPanel } from "@/components/dashboard/advanced-panel"
+import { BillingSettingsPanel } from "@/components/billing/billing-settings-panel"
 import { LinkedAccountsPanel } from "@/components/dashboard/linked-accounts-panel"
-import { PlansDialog } from "@/components/dashboard/plans-dialog"
 import { SessionsPanel } from "@/components/dashboard/sessions-panel"
 import {
   SettingsCard,
   SettingsNotice,
   SettingsPanel,
-  SettingsStat,
-  SettingsStatGrid,
 } from "@/components/dashboard/settings-ui"
 import { ThemeToggleRow } from "@/components/dashboard/theme-toggle-row"
 import { PasswordInput } from "@/components/auth/password-input"
@@ -38,14 +36,10 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { useUserOverview } from "@/hooks/use-dashboard-query"
 import { useSoundNotifications } from "@/hooks/use-sound-notifications"
 import { playMoodCue } from "@/lib/chat-sounds"
-import { autumnCreditsUsage } from "@/lib/billing/autumn-usage"
-import { formatCredits, isFreePlan } from "@/lib/billing"
 import { setSoundNotificationsEnabled } from "@/lib/sound-notifications"
 import { cn } from "@/lib/utils"
-import { useCustomer } from "autumn-js/react"
 import {
   changePasswordAction,
   type ChangePasswordState,
@@ -95,59 +89,6 @@ const navGroups: NavGroup[] = [
 ]
 
 const allNavItems = navGroups.flatMap((group) => group.items)
-
-function BillingPanel() {
-  const { data: overview } = useUserOverview()
-  const { data: customer, isLoading: customerLoading, refetch } = useCustomer()
-  const [plansOpen, setPlansOpen] = useState(false)
-
-  useEffect(() => {
-    if (!overview) return
-    void refetch()
-  }, [overview, refetch])
-
-  if (!overview) return null
-
-  const planName = overview.billing.plan?.name ?? "Free"
-  const showUpgrade = isFreePlan(overview.billing.plan)
-  const autumnUsage = autumnCreditsUsage(customer)
-  const creditBalance = autumnUsage?.remaining ?? overview.billing.credits.balance
-  const creditGranted = autumnUsage?.granted ?? overview.billing.credits.granted
-  const creditUsed = autumnUsage?.usage ?? Math.max(0, creditGranted - creditBalance)
-
-  return (
-    <SettingsPanel>
-      <SettingsStatGrid>
-        <SettingsStat label="Current plan" value={planName} />
-        <SettingsStat
-          label="Credits left"
-          value={customerLoading && !autumnUsage ? "…" : formatCredits(creditBalance)}
-          hint="Available this period"
-        />
-        <SettingsStat
-          label="Used this period"
-          value={customerLoading && !autumnUsage ? "…" : formatCredits(creditUsed)}
-          hint={
-            autumnUsage
-              ? `${formatCredits(creditGranted)} included`
-              : "Syncs when Autumn loads"
-          }
-        />
-      </SettingsStatGrid>
-      {showUpgrade ? (
-        <SettingsCard
-          title="Upgrade your workspace"
-          description="Unlock more credits and team features."
-        >
-          <Button className="self-start" onClick={() => setPlansOpen(true)}>
-            View plans
-          </Button>
-          <PlansDialog open={plansOpen} onOpenChange={setPlansOpen} />
-        </SettingsCard>
-      ) : null}
-    </SettingsPanel>
-  )
-}
 
 function PreferencesPanel() {
   const soundEnabled = useSoundNotifications()
@@ -408,7 +349,7 @@ function SettingsDialog({
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8 sm:px-8 sm:pb-10">
             {section === "account" ? <AccountPanel /> : null}
-            {section === "billing" ? <BillingPanel /> : null}
+            {section === "billing" ? <BillingSettingsPanel /> : null}
             {section === "preferences" ? <PreferencesPanel /> : null}
             {section === "security" ? <SecurityPanel /> : null}
             {section === "linked-accounts" ? <LinkedAccountsPanel /> : null}

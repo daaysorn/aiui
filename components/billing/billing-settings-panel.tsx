@@ -1,18 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useListEvents } from "autumn-js/react"
-import { useCustomer } from "autumn-js/react"
+import { useCustomer, useListEvents } from "autumn-js/react"
+import { toast } from "sonner"
 
+import { openBillingPortalAction } from "@/app/(dashboard)/dashboard/billing/actions"
 import { PlansDialog } from "@/components/dashboard/plans-dialog"
 import {
   SettingsCard,
+  SettingsLoading,
+  SettingsNotice,
   SettingsPanel,
   SettingsStat,
   SettingsStatGrid,
 } from "@/components/dashboard/settings-ui"
 import { Button } from "@/components/ui/button"
-import { SettingsLoading } from "@/components/dashboard/settings-ui"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
 import {
   creditUsagePercent,
@@ -20,13 +22,26 @@ import {
   formatCreditsDetail,
   isFreePlan,
 } from "@/lib/billing"
-import { autumnCreditsUsage } from "@/lib/billing/autumn-usage"
+import {
+  autumnCreditsUsage,
+  combineWorkspaceAndAutumnCredits,
+} from "@/lib/billing/autumn-usage"
 import { AUTUMN_CREDITS_FEATURE_ID } from "@/lib/billing/features"
 import {
   creditUsageEventAmount,
   creditUsageEventLabel,
   formatUsageEventTime,
 } from "@/lib/billing/usage-labels"
+
+function formatBillingDate(epochMs: number | null | undefined): string | null {
+  if (!epochMs || !Number.isFinite(epochMs)) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+    new Date(epochMs)
+  )
+}
 
 function CreditUsageProgress({
   used,
@@ -79,10 +94,6 @@ function CreditUsageProgress({
             {formatCreditsDetail(remaining)}
           </span>{" "}
           credits left
-          <span className="text-muted-foreground">
-            {" "}
-            ({formatCredits(remaining)} compact)
-          </span>
         </p>
       </div>
     </div>
@@ -148,6 +159,7 @@ export function BillingSettingsPanel() {
     limit: 20,
   })
   const [plansOpen, setPlansOpen] = useState(false)
+  const [portalPending, setPortalPending] = useState(false)
 
   useEffect(() => {
     if (!overview) return
@@ -159,15 +171,33 @@ export function BillingSettingsPanel() {
 
   const planName = overview.billing.plan?.name ?? "Free"
   const showUpgrade = isFreePlan(overview.billing.plan)
-  const autumnUsage = autumnCreditsUsage(customer)
+  const subscription = overview.billing.subscription
+  const autumnUsage = combineWorkspaceAndAutumnCredits(
+    overview.billing.credits,
+    autumnCreditsUsage(customer)
+  )
   const creditGranted = autumnUsage?.granted ?? overview.billing.credits.granted
-  const creditUsed =
-    autumnUsage?.usage ?? Math.max(0, creditGranted - overview.billing.credits.balance)
-  const creditRemaining =
-    autumnUsage != null
-      ? Math.max(0, autumnUsage.remaining)
-      : overview.billing.credits.balance
+  const creditUsed = autumnUsage?.usage ?? Math.max(0, creditGranted - overview.billing.credits.balance)
+  const creditRemaining = autumnUsage?.remaining ?? overview.billing.credits.balance
   const usageEvents = (events ?? []).filter((event) => event.value > 0)
+  const periodEnd = formatBillingDate(subscription.currentPeriodEnd)
+  const cancelAt = formatBillingDate(subscription.canceledAt)
+
+  async function openBillingPortal() {
+    setPortalPending(true)
+    try {
+      const result = await openBillingPortalAction(
+        `${window.location.origin}/dashboard?settings=billing`
+      )
+      if (result.url) {
+        window.location.href = result.url
+        return
+      }
+      toast.error(result.error ?? "Could not open billing portal.")
+    } finally {
+      setPortalPending(false)
+    }
+  }
 
   return (
     <SettingsPanel>
@@ -178,15 +208,47 @@ export function BillingSettingsPanel() {
           value={
             customerLoading && !autumnUsage
               ? "…"
-              : formatCreditsDetail(creditRemaining)
+              : formatCredits(creditRemaining)
           }
-          hint={
-            autumnUsage
-              ? `${formatCredits(creditRemaining)} compact`
-              : "Syncs when Autumn loads"
-          }
+          hint={`${formatCreditsDetail(creditRemaining)} available`}
         />
       </SettingsStatGrid>
+
+      {!showUpgrade ? (
+        <SettingsCard
+          title="Subscription"
+          description="Update your card or cancel your plan."
+        >
+          <div className="flex flex-col gap-3">
+            {subscription.pastDue ? (
+              <SettingsNotice tone="error">
+                Payment is past due. Update your card to keep your plan.
+              </SettingsNotice>
+            ) : null}
+            {cancelAt ? (
+              <p className="text-sm text-muted-foreground">
+                Cancellation scheduled for {cancelAt}.
+              </p>
+            ) : periodEnd ? (
+              <p className="text-sm text-muted-foreground">
+                Current period ends {periodEnd}.
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button loading={portalPending} onClick={() => void openBillingPortal()}>
+                Manage subscription
+              </Button>
+              <Button
+                variant="outline"
+                loading={portalPending}
+                onClick={() => void openBillingPortal()}
+              >
+                Cancel subscription
+              </Button>
+            </div>
+          </div>
+        </SettingsCard>
+      ) : null}
 
       <SettingsCard
         title="Usage this period"

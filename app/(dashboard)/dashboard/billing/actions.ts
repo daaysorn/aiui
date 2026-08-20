@@ -69,3 +69,35 @@ export async function trackFeatureUsageAction(input: {
     return { error: "Could not record usage." }
   }
 }
+
+export type BillingPortalState = {
+  url?: string
+  error?: string
+}
+
+export async function openBillingPortalAction(
+  returnUrl?: string
+): Promise<BillingPortalState> {
+  try {
+    const result = await serverApiRequest<{ url: string }>("/v1/billing/portal", {
+      method: "POST",
+      json: {
+        returnUrl:
+          returnUrl?.trim() ||
+          `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"}/dashboard?settings=billing`,
+      },
+    })
+
+    if (typeof result.url !== "string" || !/^https?:\/\//i.test(result.url)) {
+      return { error: "Billing portal link missing." }
+    }
+
+    return { url: result.url }
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      return { error: error.message }
+    }
+
+    return { error: "Could not open billing portal." }
+  }
+}
