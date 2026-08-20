@@ -96,7 +96,27 @@ async function main() {
     fail("Missing next binary. Run `bun install` before start.")
   }
 
+  const workflowUrl = process.env.WORKFLOW_POSTGRES_URL?.trim()
+  if (!workflowUrl) {
+    fail(
+      "WORKFLOW_POSTGRES_URL is required (dedicated Eve Postgres). Set it in Coolify env."
+    )
+  }
+
   forwardSignals()
+
+  console.error("[start-with-eve] ensuring Eve Postgres schema…")
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [join(root, "scripts", "workflow-setup.mjs")], {
+      cwd: root,
+      env: { ...process.env, WORKFLOW_POSTGRES_URL: workflowUrl },
+      stdio: "inherit",
+    })
+    child.on("exit", (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`workflow-setup exited with code ${code ?? 1}`))
+    })
+  })
 
   console.error(`[start-with-eve] starting Eve on 127.0.0.1:${evePort}`)
   spawnChild(process.execPath, [eveEntry], {
@@ -104,6 +124,8 @@ async function main() {
     NITRO_HOST: "127.0.0.1",
     NITRO_PORT: String(evePort),
     PORT: String(evePort),
+    WORKFLOW_POSTGRES_URL: workflowUrl,
+    WORKFLOW_TARGET_WORLD: "@workflow/world-postgres",
   })
 
   await waitForEveHealth(evePort)
