@@ -22,7 +22,7 @@ export function resolveSocialAuthErrorMessage(
     normalized.includes("account_not_linked") ||
     normalized.includes("account not linked")
   ) {
-    return "That social account is already linked to another user."
+    return "That email already has a password account. Verify your email, then try Google or GitHub again, or link from Settings."
   }
 
   if (normalized.includes("state")) {
