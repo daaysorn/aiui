@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useBillingPlans, useUserOverview } from "@/hooks/use-dashboard-query"
 import type { BillingPlan } from "@/lib/api/types"
 import {
+  formatCredits,
   formatPlanPrice,
   isCurrentPlan,
   isFreePlan,
@@ -66,7 +67,7 @@ function planTagline(plan: BillingPlan) {
   const parts: string[] = []
   if (plan.includedCredits > 0) {
     parts.push(
-      `${new Intl.NumberFormat().format(plan.includedCredits)} credits each month`
+      `${formatCredits(plan.includedCredits)} credits each month`
     )
   }
   if (plan.minSeats > 0) {

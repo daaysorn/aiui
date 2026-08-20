@@ -45,6 +45,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { clearSession } from "@/lib/api/client"
+import { formatCredits } from "@/lib/billing"
 import { isFreePlan } from "@/lib/billing"
 import { useBillingCheckoutReturn } from "@/hooks/use-billing-checkout-return"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
@@ -56,10 +57,6 @@ type DashboardShellProps = {
   creditBalance: number
   showUpgrade?: boolean
   children: ReactNode
-}
-
-function formatCreditBalance(balance: number) {
-  return new Intl.NumberFormat("en-US").format(balance)
 }
 
 const settingsSections: SettingsSection[] = [
@@ -88,7 +85,7 @@ function PlanCredits({
 }) {
   return (
     <>
-      {planName} · {formatCreditBalance(creditBalance)} credits
+      {planName} · {formatCredits(creditBalance)} credits
     </>
   )
 }

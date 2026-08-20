@@ -59,6 +59,31 @@ export function formatPlanPrice(plan: Pick<BillingPlan, "priceCents" | "seatPric
   }
 }
 
+export function formatCredits(value: number): string {
+  const amount = Math.max(0, Number.isFinite(value) ? value : 0)
+
+  if (amount < 1000) {
+    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount)
+  }
+
+  const tiers = [
+    [1_000_000_000, "b"],
+    [1_000_000, "m"],
+    [1_000, "k"],
+  ] as const
+
+  for (const [threshold, suffix] of tiers) {
+    if (amount >= threshold) {
+      const scaled = amount / threshold
+      const decimals = scaled >= 100 ? 0 : 1
+      const formatted = scaled.toFixed(decimals).replace(/\.0$/, "")
+      return `${formatted}${suffix}`
+    }
+  }
+
+  return String(amount)
+}
+
 export function billingPaymentUrl(data: unknown): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return null

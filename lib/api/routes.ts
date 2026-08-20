@@ -43,8 +43,10 @@
  * --- Billing (/v1/billing/*) ---
  * GET    /v1/billing/plans            ?audience=personal|organization → { plans: BillingPlan[] }
  * GET    /v1/billing/plans/:slug      → BillingPlan
- * POST   /v1/billing/sync             Ensure Autumn customer exists
- * POST   /v1/billing/attach           { planId, organizationId?, seats? } → { paymentUrl? }
+ * POST   /v1/billing/customer         Ensure Autumn customer exists
+ * POST   /v1/billing/check            { featureId, requiredBalance? } → { allowed, balance? }
+ * POST   /v1/billing/track             { featureId, value? } → usage recorded
+ * POST   /v1/billing/attach            { planId, organizationId?, seats? } → { paymentUrl? }
  * GET    /v1/billing/usage            → BillingUsage
  * PATCH  /v1/billing/extra-usage      { enabled, capCents? }
  * POST   /v1/billing/extra-usage/funds { amountCents }

@@ -42,8 +42,11 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { useBillingGate } from "@/hooks/use-billing-gate"
 import { useChatMoodSounds } from "@/hooks/use-chat-mood-sounds"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
+import { CHAT_MESSAGE_CREDIT_COST } from "@/lib/billing/features"
+import { toast } from "sonner"
 
 const CHAT_SUGGESTIONS = [
   "What can you help with?",
@@ -81,6 +84,7 @@ export function OverviewView({
   showSuggestions?: boolean
 }) {
   const { data: overview } = useUserOverview()
+  const { ensureAccess, recordUsage } = useBillingGate()
   const firstName = overview?.user.name.split(" ")[0] ?? ""
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -143,9 +147,15 @@ export function OverviewView({
     })
   }
 
-  function sendChat(text: string) {
+  async function sendChat(text: string) {
     const trimmed = text.trim()
     if ((!trimmed && attachments.length === 0) || streaming) return
+
+    const allowed = await ensureAccess({ requiredBalance: CHAT_MESSAGE_CREDIT_COST })
+    if (!allowed) {
+      toast.error("You're out of credits")
+      return
+    }
 
     const sentAttachments: SentAttachment[] = attachments.map((item) => ({
       id: item.id,
@@ -169,7 +179,7 @@ export function OverviewView({
 
     const receivedLabel = trimmed || sentAttachments.map((item) => item.name).join(", ")
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setMessages((prev) => [
         ...prev,
         {
@@ -180,6 +190,12 @@ export function OverviewView({
         },
       ])
       setStreaming(false)
+
+      try {
+        await recordUsage({ value: CHAT_MESSAGE_CREDIT_COST })
+      } catch {
+        toast.error("Message sent but usage was not recorded.")
+      }
     }, 1200)
   }
 

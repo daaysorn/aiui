@@ -7,11 +7,7 @@ import { DashboardSection } from "@/components/dashboard/dashboard-shell"
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { Button } from "@/components/ui/button"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
-import { isFreePlan } from "@/lib/billing"
-
-function formatCreditBalance(balance: number) {
-  return new Intl.NumberFormat("en-US").format(balance)
-}
+import { formatCredits, isFreePlan } from "@/lib/billing"
 
 export function BillingView() {
   const { data: overview, isPending } = useUserOverview()
@@ -39,7 +35,7 @@ export function BillingView() {
             Credits
           </p>
           <p className="mt-2 font-heading text-2xl font-semibold">
-            {formatCreditBalance(creditBalance)}
+            {formatCredits(creditBalance)}
           </p>
         </div>
         {showUpgrade ? (

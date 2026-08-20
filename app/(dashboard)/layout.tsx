@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { Suspense, type ReactNode } from "react"
 
+import { BillingAutumnProvider } from "@/components/billing/autumn-provider"
 import { DashboardQueryProvider } from "@/components/dashboard/query-provider"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { isFreePlan } from "@/lib/billing"
@@ -34,17 +35,19 @@ export default async function DashboardLayout({
 
   return (
     <DashboardQueryProvider overview={overview}>
-      <Suspense fallback={null}>
-        <DashboardShell
-          userName={user.name}
-          userImage={user.image}
-          planName={billing.plan?.name ?? "Free"}
-          creditBalance={billing.credits.balance}
-          showUpgrade={isFreePlan(billing.plan)}
-        >
-          {children}
-        </DashboardShell>
-      </Suspense>
+      <BillingAutumnProvider>
+        <Suspense fallback={null}>
+          <DashboardShell
+            userName={user.name}
+            userImage={user.image}
+            planName={billing.plan?.name ?? "Free"}
+            creditBalance={billing.credits.balance}
+            showUpgrade={isFreePlan(billing.plan)}
+          >
+            {children}
+          </DashboardShell>
+        </Suspense>
+      </BillingAutumnProvider>
     </DashboardQueryProvider>
   )
 }

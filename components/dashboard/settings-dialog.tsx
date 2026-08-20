@@ -41,7 +41,7 @@ import { Switch } from "@/components/ui/switch"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
 import { useSoundNotifications } from "@/hooks/use-sound-notifications"
 import { playMoodCue } from "@/lib/chat-sounds"
-import { isFreePlan } from "@/lib/billing"
+import { formatCredits, isFreePlan } from "@/lib/billing"
 import { setSoundNotificationsEnabled } from "@/lib/sound-notifications"
 import { cn } from "@/lib/utils"
 import {
@@ -94,10 +94,6 @@ const navGroups: NavGroup[] = [
 
 const allNavItems = navGroups.flatMap((group) => group.items)
 
-function formatCreditBalance(balance: number) {
-  return new Intl.NumberFormat("en-US").format(balance)
-}
-
 function BillingPanel() {
   const { data: overview } = useUserOverview()
   const [plansOpen, setPlansOpen] = useState(false)
@@ -114,7 +110,7 @@ function BillingPanel() {
         <SettingsStat label="Current plan" value={planName} />
         <SettingsStat
           label="Credits"
-          value={formatCreditBalance(creditBalance)}
+          value={formatCredits(creditBalance)}
           hint="Available this period"
         />
       </SettingsStatGrid>
