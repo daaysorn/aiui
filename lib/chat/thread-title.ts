@@ -63,3 +63,6 @@ export function recentChatHref(chat: {
   }
   return `/dashboard/projects/${chat.parentId}`
 }
+
+/** Client-only: clear active dashboard thread without a Next soft navigation. */
+export const DASHBOARD_NEW_CHAT_EVENT = "daaybot:dashboard-new-chat"

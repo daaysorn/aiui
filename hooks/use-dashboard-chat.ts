@@ -58,7 +58,7 @@ export function useDashboardChatBootstrap({
     }
 
     // First message just created this thread. Keep the live agent; do not reload.
-    if (previous === null && threadId) {
+    if ((previous === null || previous === undefined) && threadId) {
       setReady(true)
       return
     }

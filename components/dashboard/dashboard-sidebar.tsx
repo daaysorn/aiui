@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   BuildingsIcon,
@@ -53,7 +53,10 @@ import {
 import type { RecentChat } from "@/lib/api/types"
 import { useChannels, useProjects, useRecentChats, useUserOverview } from "@/hooks/use-dashboard-query"
 import { clearDashboardChat } from "@/lib/chat/dashboard-session-storage"
-import { recentChatHref } from "@/lib/chat/thread-title"
+import {
+  DASHBOARD_NEW_CHAT_EVENT,
+  recentChatHref,
+} from "@/lib/chat/thread-title"
 import { queryKeys } from "@/lib/query/keys"
 import { cn } from "@/lib/utils"
 
@@ -136,7 +139,7 @@ function DashboardSidebar() {
   const { data: projects } = useProjects()
   const { data: channels } = useChannels()
   const { data: recents } = useRecentChats()
-  const [pending, startTransition] = useTransition()
+  const [mutating, setMutating] = useState(false)
   const [chatToDelete, setChatToDelete] = useState<RecentChat | null>(null)
   const [clearAllOpen, setClearAllOpen] = useState(false)
 
@@ -162,6 +165,7 @@ function DashboardSidebar() {
       return
     }
     if (!chat || (chat.scope === "workspace" && chat.id === activeThreadId)) {
+      window.dispatchEvent(new Event(DASHBOARD_NEW_CHAT_EVENT))
       router.replace("/dashboard", { scroll: false })
     }
   }
@@ -187,7 +191,7 @@ function DashboardSidebar() {
 
   function confirmDeleteChat() {
     const chat = chatToDelete
-    if (!chat) return
+    if (!chat || mutating) return
 
     setChatToDelete(null)
     const previous = removeChatFromCache(chat)
@@ -196,17 +200,20 @@ function DashboardSidebar() {
     }
     leaveDeletedThread(chat)
 
-    startTransition(async () => {
-      try {
-        await deleteRecentChat(chat)
-      } catch {
+    setMutating(true)
+    void deleteRecentChat(chat)
+      .catch(() => {
         queryClient.setQueryData(queryKeys.recentChats, previous)
         toast.error("Could not delete chat.")
-      }
-    })
+      })
+      .finally(() => {
+        setMutating(false)
+      })
   }
 
   function confirmClearAll() {
+    if (mutating) return
+
     setClearAllOpen(false)
     const previous = clearRecentsCache()
     if (userId) {
@@ -218,14 +225,15 @@ function DashboardSidebar() {
     }
     leaveDeletedThread()
 
-    startTransition(async () => {
-      try {
-        await clearRecentChats()
-      } catch {
+    setMutating(true)
+    void clearRecentChats()
+      .catch(() => {
         queryClient.setQueryData(queryKeys.recentChats, previous)
         toast.error("Could not delete chats.")
-      }
-    })
+      })
+      .finally(() => {
+        setMutating(false)
+      })
   }
 
   return (
@@ -375,7 +383,7 @@ function DashboardSidebar() {
             <SidebarGroupLabel>Recents</SidebarGroupLabel>
             <SidebarGroupAction
               aria-label="Delete all chats"
-              disabled={pending}
+              disabled={mutating}
               className="text-muted-foreground hover:text-destructive"
               onClick={() => setClearAllOpen(true)}
             >
@@ -422,10 +430,18 @@ function DashboardSidebar() {
             <DialogDescription>This cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setChatToDelete(null)}>
+            <Button
+              variant="secondary"
+              disabled={mutating}
+              onClick={() => setChatToDelete(null)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmDeleteChat}>
+            <Button
+              variant="destructive"
+              loading={mutating}
+              onClick={confirmDeleteChat}
+            >
               Delete
             </Button>
           </DialogFooter>
@@ -441,10 +457,18 @@ function DashboardSidebar() {
             <DialogDescription>This cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setClearAllOpen(false)}>
+            <Button
+              variant="secondary"
+              disabled={mutating}
+              onClick={() => setClearAllOpen(false)}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmClearAll}>
+            <Button
+              variant="destructive"
+              loading={mutating}
+              onClick={confirmClearAll}
+            >
               Delete all
             </Button>
           </DialogFooter>

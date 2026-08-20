@@ -49,6 +49,7 @@ import {
 } from "@/hooks/use-dashboard-chat"
 import { useChatMoodSounds } from "@/hooks/use-chat-mood-sounds"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
+import { DASHBOARD_NEW_CHAT_EVENT } from "@/lib/chat/thread-title"
 
 const CHAT_SUGGESTIONS = [
   "What can you help with?",
@@ -239,18 +240,19 @@ function OverviewChatPanelInner({
     if ((!trimmed && files.length === 0) || isBusy) return
 
     const pending = attachments
-    const result = await sendMessage(trimmed, { files })
-    if (!result.ok) {
-      if (result.reason !== "empty") {
-        resolveSendToast(result.reason)
-      }
-      return
-    }
-
+    // Clear composer immediately; restore only if send fails to start.
     setInput("")
     setAttachments([])
     for (const item of pending) {
       if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+    }
+
+    const result = await sendMessage(trimmed, { files })
+    if (!result.ok) {
+      setInput(trimmed)
+      if (result.reason !== "empty") {
+        resolveSendToast(result.reason)
+      }
     }
   }
 
@@ -566,9 +568,13 @@ export function OverviewView({
   const skipUrlThreadSyncRef = useRef(false)
 
   useEffect(() => {
+    // First-message create sets the thread locally before `router.replace`
+    // updates searchParams. Keep waiting — do not sync stale null from the URL
+    // (that remounts the panel into a skeleton).
     if (skipUrlThreadSyncRef.current) {
-      skipUrlThreadSyncRef.current = false
-      setActiveThreadId(urlThreadId)
+      if (urlThreadId === activeThreadId) {
+        skipUrlThreadSyncRef.current = false
+      }
       return
     }
 
@@ -579,6 +585,19 @@ export function OverviewView({
     setActiveThreadId(urlThreadId)
     setSessionEpoch((value) => value + 1)
   }, [activeThreadId, urlThreadId])
+
+  useEffect(() => {
+    function onNewChat() {
+      skipUrlThreadSyncRef.current = true
+      setActiveThreadId(null)
+      setSessionEpoch((value) => value + 1)
+    }
+
+    window.addEventListener(DASHBOARD_NEW_CHAT_EVENT, onNewChat)
+    return () => {
+      window.removeEventListener(DASHBOARD_NEW_CHAT_EVENT, onNewChat)
+    }
+  }, [])
 
   if (!overview) {
     return <DashboardSkeleton />
