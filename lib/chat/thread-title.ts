@@ -56,6 +56,20 @@ function clampTitleWords(text: string): string {
   return words.slice(0, Math.min(MAX_TITLE_WORDS, words.length)).join(" ")
 }
 
+/** Normalize an LLM (or heuristic) title into the 2–6 word Recents format. */
+export function normalizeGeneratedThreadTitle(text: string): string | null {
+  const cleaned = text
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/[.!?]+$/g, "")
+  if (!cleaned) {
+    return null
+  }
+  const titled = clampTitleWords(cleaned)
+  return titled ? capitalize(titled) : null
+}
+
 /**
  * Turns the first user message into a short recent-chat title.
  * Prefer topic wording over a raw truncation of the full prompt.

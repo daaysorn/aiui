@@ -45,6 +45,7 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
 } from "@/components/ui/sidebar"
 import {
   clearRecentChats,
@@ -70,6 +71,8 @@ const primaryNav = [
   { href: "/dashboard/plugins", label: "Plugins", icon: PuzzlePieceIcon, exact: true },
   { href: "/dashboard/mcps", label: "MCPs", icon: PlugsIcon, exact: true },
 ] as const
+
+const RECENT_CHAT_SKELETON_WIDTHS = ["72%", "58%", "84%", "64%", "76%"] as const
 
 function NavButton({
   href,
@@ -147,7 +150,7 @@ function DashboardSidebar() {
   const { data: overview } = useUserOverview()
   const { data: projects } = useProjects()
   const { data: channels } = useChannels()
-  const { data: recents } = useRecentChats()
+  const { data: recents, isPending: recentsPending } = useRecentChats()
   const [mutating, setMutating] = useState(false)
   const [chatToDelete, setChatToDelete] = useState<RecentChat | null>(null)
   const [chatToEdit, setChatToEdit] = useState<RecentChat | null>(null)
@@ -169,6 +172,7 @@ function DashboardSidebar() {
   const recentChannels = (channels ?? []).slice(0, 3)
   const recentChats = recents ?? []
   const hasRecents = recentChats.length > 0
+  const showRecents = recentsPending || hasRecents
   const userId = overview?.user.id
 
   function leaveDeletedThread(chat?: RecentChat) {
@@ -433,17 +437,19 @@ function DashboardSidebar() {
           </SidebarGroup>
         ) : null}
 
-        {hasRecents ? (
+        {showRecents ? (
           <SidebarGroup className="min-h-0 flex-1">
             <SidebarGroupLabel>Recents</SidebarGroupLabel>
-            <SidebarGroupAction
-              aria-label="Delete all chats"
-              disabled={mutating}
-              className="text-muted-foreground hover:text-destructive"
-              onClick={() => setClearAllOpen(true)}
-            >
-              <TrashIcon />
-            </SidebarGroupAction>
+            {!recentsPending ? (
+              <SidebarGroupAction
+                aria-label="Delete all chats"
+                disabled={mutating}
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => setClearAllOpen(true)}
+              >
+                <TrashIcon />
+              </SidebarGroupAction>
+            ) : null}
             <SidebarGroupContent className="min-h-0 flex-1">
               <div
                 className={cn(
@@ -452,18 +458,24 @@ function DashboardSidebar() {
                 )}
               >
                 <SidebarMenu>
-                  {recentChats.map((chat) => (
-                    <RecentChatItem
-                      key={`${chat.scope}:${chat.id}`}
-                      chat={chat}
-                      isActive={
-                        chat.scope === "workspace" &&
-                        activeThreadId === chat.id
-                      }
-                      onRequestEdit={openEditChat}
-                      onRequestDelete={setChatToDelete}
-                    />
-                  ))}
+                  {recentsPending
+                    ? RECENT_CHAT_SKELETON_WIDTHS.map((width, index) => (
+                        <SidebarMenuItem key={`recent-skeleton-${index}`}>
+                          <SidebarMenuSkeleton width={width} />
+                        </SidebarMenuItem>
+                      ))
+                    : recentChats.map((chat) => (
+                        <RecentChatItem
+                          key={`${chat.scope}:${chat.id}`}
+                          chat={chat}
+                          isActive={
+                            chat.scope === "workspace" &&
+                            activeThreadId === chat.id
+                          }
+                          onRequestEdit={openEditChat}
+                          onRequestDelete={setChatToDelete}
+                        />
+                      ))}
                 </SidebarMenu>
               </div>
             </SidebarGroupContent>

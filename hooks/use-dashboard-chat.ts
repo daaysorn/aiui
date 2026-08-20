@@ -18,6 +18,7 @@ import {
   type SavedDashboardChat,
 } from "@/lib/chat/dashboard-session-storage"
 import { hydrateEveSession } from "@/lib/chat/eve-session-hydrate"
+import { summarizeThreadTitle } from "@/lib/chat/summarize-thread-title"
 import { threadTitleFromMessage } from "@/lib/chat/thread-title"
 import { queryKeys } from "@/lib/query/keys"
 
@@ -167,6 +168,11 @@ export function useDashboardChat({
   const trackFailureRef = useRef<(() => void) | null>(null)
   const threadIdRef = useRef<string | null>(threadId)
   const creatingThreadRef = useRef<Promise<string> | null>(null)
+  /** First-message source for AI Recents title (cleared after one attempt). */
+  const pendingAiTitleRef = useRef<{
+    threadId: string
+    source: string
+  } | null>(null)
 
   if (threadId && threadIdRef.current !== threadId) {
     threadIdRef.current = threadId
@@ -187,36 +193,71 @@ export function useDashboardChat({
       chargeAfterTurnRef.current = false
     },
     onFinish: (snapshot) => {
-      const activeThreadId = threadIdRef.current
-      if (userId && activeThreadId) {
-        saveDashboardChat(userId, activeThreadId, {
-          events: snapshot.events,
-          session: snapshot.session,
-        })
+      void (async () => {
+        if (creatingThreadRef.current) {
+          await creatingThreadRef.current.catch(() => null)
+        }
 
-        const sessionId = snapshot.session?.sessionId
-        if (sessionId) {
-          void updateWorkspaceThread(activeThreadId, {
-            eveSessionId: sessionId,
+        const activeThreadId = threadIdRef.current
+        if (userId && activeThreadId) {
+          saveDashboardChat(userId, activeThreadId, {
+            events: snapshot.events,
+            session: snapshot.session,
           })
-            .then(() =>
-              queryClient.invalidateQueries({ queryKey: queryKeys.recentChats })
-            )
+
+          const sessionId = snapshot.session?.sessionId
+          if (sessionId) {
+            void updateWorkspaceThread(activeThreadId, {
+              eveSessionId: sessionId,
+            })
+              .then(() =>
+                queryClient.invalidateQueries({
+                  queryKey: queryKeys.recentChats,
+                })
+              )
+              .catch(() => {})
+          }
+        }
+
+        const pendingTitle = pendingAiTitleRef.current
+        if (
+          pendingTitle &&
+          pendingTitle.threadId === activeThreadId &&
+          snapshot.status === "ready" &&
+          !snapshot.error
+        ) {
+          pendingAiTitleRef.current = null
+          void summarizeThreadTitle(pendingTitle.source)
+            .then((title) => {
+              if (
+                !title ||
+                title === threadTitleFromMessage(pendingTitle.source)
+              ) {
+                return
+              }
+              return updateWorkspaceThread(pendingTitle.threadId, {
+                title,
+              }).then(() =>
+                queryClient.invalidateQueries({
+                  queryKey: queryKeys.recentChats,
+                })
+              )
+            })
             .catch(() => {})
         }
-      }
 
-      if (!chargeAfterTurnRef.current) {
-        return
-      }
+        if (!chargeAfterTurnRef.current) {
+          return
+        }
 
-      chargeAfterTurnRef.current = false
+        chargeAfterTurnRef.current = false
 
-      if (snapshot.status === "ready" && !snapshot.error) {
-        void recordUsage({ value: CHAT_MESSAGE_CREDIT_COST }).catch(() => {
-          trackFailureRef.current?.()
-        })
-      }
+        if (snapshot.status === "ready" && !snapshot.error) {
+          void recordUsage({ value: CHAT_MESSAGE_CREDIT_COST }).catch(() => {
+            trackFailureRef.current?.()
+          })
+        }
+      })()
     },
   })
 
@@ -234,11 +275,14 @@ export function useDashboardChat({
         return creatingThreadRef.current
       }
 
-      creatingThreadRef.current = createWorkspaceThread(
-        threadTitleFromMessage(titleSource || "New chat")
-      )
+      const provisionalTitle = threadTitleFromMessage(titleSource || "New chat")
+      creatingThreadRef.current = createWorkspaceThread(provisionalTitle)
         .then((thread) => {
           threadIdRef.current = thread.id
+          pendingAiTitleRef.current = {
+            threadId: thread.id,
+            source: titleSource || "New chat",
+          }
           onThreadCreated?.(thread.id)
           void queryClient.invalidateQueries({ queryKey: queryKeys.recentChats })
           return thread.id
@@ -281,12 +325,13 @@ export function useDashboardChat({
       chargeAfterTurnRef.current = true
 
       const titleSource = trimmed || files[0]?.name || "New chat"
+      // Create the Nest thread in parallel; do not block the Eve turn on it.
       const threadPromise = ensureThread(titleSource)
+      void threadPromise.catch(() => {})
 
       try {
         const content = await buildUserContent(trimmed, files)
         await agent.send(content)
-        await threadPromise.catch(() => {})
         return { ok: true }
       } catch (error) {
         chargeAfterTurnRef.current = false

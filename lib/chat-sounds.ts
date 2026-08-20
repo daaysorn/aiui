@@ -3,9 +3,22 @@ type LoopMood = "thinking" | "searching"
 let audioContext: AudioContext | null = null
 let loopTimer: number | null = null
 let activeLoop: LoopMood | null = null
+let visibilityBound = false
+
+function bindVisibilityResume() {
+  if (typeof document === "undefined" || visibilityBound) return
+  visibilityBound = true
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden || !audioContext) return
+    if (audioContext.state === "suspended") {
+      void audioContext.resume()
+    }
+  })
+}
 
 function getAudioContext() {
   if (typeof window === "undefined") return null
+  bindVisibilityResume()
   if (!audioContext) audioContext = new AudioContext()
   if (audioContext.state === "suspended") void audioContext.resume()
   return audioContext
@@ -13,7 +26,8 @@ function getAudioContext() {
 
 function beep(frequency: number, when: number, duration: number, gain = 0.05) {
   const audio = getAudioContext()
-  if (!audio || document.hidden) return
+  // Keep cues going when the tab is in the background (document.hidden must not mute).
+  if (!audio) return
 
   const oscillator = audio.createOscillator()
   const envelope = audio.createGain()
