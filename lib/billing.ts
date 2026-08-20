@@ -17,9 +17,13 @@ export function isFreePlan(plan: BillingPlanRef): boolean {
   return slug === "free" || billingType === "free"
 }
 
-export function planSlug(plan: { slug: string } | string | null | undefined) {
+export function planSlug(
+  plan: { slug?: string | null } | string | null | undefined
+) {
   if (!plan) return "free"
-  return (typeof plan === "string" ? plan : plan.slug).trim().toLowerCase()
+  const slug = typeof plan === "string" ? plan : plan.slug
+  if (!slug) return "free"
+  return slug.trim().toLowerCase()
 }
 
 export function isCurrentPlan(
