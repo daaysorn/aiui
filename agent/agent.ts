@@ -1,5 +1,11 @@
-import { defineAgent } from "eve";
+import { defineAgent, defineDynamic } from "eve"
+
+import { resolveNestGatewayModel } from "./nest-gateway"
 
 export default defineAgent({
-  model: "zai/glm-5.2",
-});
+  model: defineDynamic({
+    events: {
+      "step.started": async () => resolveNestGatewayModel(),
+    },
+  }),
+})

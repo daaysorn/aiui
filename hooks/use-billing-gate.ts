@@ -38,13 +38,14 @@ export function useBillingGate() {
     (input: GateInput) => {
       const featureId = input.featureId ?? AUTUMN_CREDITS_FEATURE_ID
       const requiredBalance = input.requiredBalance ?? CHAT_MESSAGE_CREDIT_COST
+      const workspaceBalance = overview?.billing.credits.balance ?? 0
+      const workspaceOk = workspaceBalance >= requiredBalance
 
       if (customer) {
-        return check({ featureId, requiredBalance }).allowed
+        return check({ featureId, requiredBalance }).allowed || workspaceOk
       }
 
-      const balance = overview?.billing.credits.balance ?? 0
-      return balance >= requiredBalance
+      return workspaceOk
     },
     [check, customer, overview?.billing.credits.balance]
   )

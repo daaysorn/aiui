@@ -43,6 +43,7 @@
  * --- Billing (/v1/billing/*) ---
  * GET    /v1/billing/plans            ?audience=personal|organization → { plans: BillingPlan[] }
  * GET    /v1/billing/plans/:slug      → BillingPlan
+ * GET    /v1/billing/gateway          → { provider, model, configured, ready }
  * POST   /v1/billing/customer         Ensure Autumn customer exists
  * POST   /v1/billing/check            { featureId, requiredBalance? } → { allowed, balance? }
  * POST   /v1/billing/track             { featureId, value? } → usage recorded

@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.44",
     "@base-ui/react": "^1.7.0",
     "@expo-google-fonts/montserrat": "^0.4.2",
     "@phosphor-icons/react": "^2.1.10",
