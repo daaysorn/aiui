@@ -347,6 +347,7 @@ function ChatComposer({
         ref={fileInputRef}
         type="file"
         multiple
+        accept="image/*,audio/*,video/*,.pdf,application/pdf"
         className="hidden"
         onChange={handleFileChange}
       />
@@ -408,7 +409,7 @@ function ChatComposer({
           <Button
             size="icon"
             className="size-8 rounded-full"
-            disabled={!canSend || disabled}
+            disabled={streaming ? true : !canSend || disabled}
             onClick={onSend}
             aria-label="Send"
           >

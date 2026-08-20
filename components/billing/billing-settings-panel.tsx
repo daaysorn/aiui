@@ -32,8 +32,8 @@ import {
 } from "@/lib/billing/autumn-usage"
 import { AUTUMN_CREDITS_FEATURE_ID } from "@/lib/billing/features"
 import {
+  aggregateUsageByType,
   creditUsageEventAmount,
-  creditUsageEventLabel,
   formatUsageEventTime,
 } from "@/lib/billing/usage-labels"
 
@@ -137,11 +137,13 @@ function CreditUsageHistory({
   events: UsageHistoryEvent[]
   loading: boolean
 }) {
+  const rows = useMemo(() => aggregateUsageByType(events), [events])
+
   if (loading) {
     return <SettingsLoading label="Loading usage history" />
   }
 
-  if (events.length === 0) {
+  if (rows.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         No credit usage recorded this period yet.
@@ -151,19 +153,19 @@ function CreditUsageHistory({
 
   return (
     <ul className="flex flex-col gap-2">
-      {events.map((event) => (
+      {rows.map((row) => (
         <li
-          key={event.id}
+          key={row.id}
           className="flex items-start justify-between gap-3 rounded-xl bg-background/70 px-3 py-2.5"
         >
           <div className="min-w-0">
-            <p className="text-sm font-medium">{creditUsageEventLabel(event)}</p>
+            <p className="text-sm font-medium">{row.label}</p>
             <p className="text-xs text-muted-foreground">
-              {formatUsageEventTime(event.timestamp)}
+              Last used {formatUsageEventTime(row.timestamp)}
             </p>
           </div>
           <p className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
-            {creditUsageEventAmount(event.value)}
+            {creditUsageEventAmount(row.value)}
           </p>
         </li>
       ))}
@@ -194,7 +196,6 @@ export function BillingSettingsPanel() {
     return rows
       .map(ledgerToUsageEvent)
       .filter((event): event is UsageHistoryEvent => event !== null)
-      .slice(0, 20)
   }, [ledgerPage?.transactions])
 
   if (!overview) return null

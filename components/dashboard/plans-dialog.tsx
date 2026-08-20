@@ -149,7 +149,7 @@ function PlanCard({
       <article
         className={cn(
           "relative flex h-full min-w-0 flex-col rounded-2xl p-5 sm:p-6",
-          recommended && !current && "bg-card outline outline-1 -outline-offset-1 outline-primary/35",
+          recommended && !current && "bg-primary/8",
           current && "bg-muted/45",
           !current && !recommended && "bg-muted/60"
         )}
@@ -295,7 +295,7 @@ export function PlansDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         overlayClassName="bg-black/70 supports-backdrop-filter:backdrop-blur-md"
-        className="max-h-[min(92dvh,44rem)] gap-0 overflow-hidden rounded-3xl bg-background p-0 shadow-lg outline-solid outline-1 -outline-offset-1 outline-border sm:max-w-5xl"
+        className="max-h-[min(92dvh,44rem)] gap-0 overflow-hidden rounded-3xl bg-background p-0 shadow-lg sm:max-w-5xl"
       >
         <div className="flex max-h-[min(92dvh,44rem)] flex-col overflow-y-auto p-5 sm:p-8">
           <DialogHeader className="items-center gap-2 pb-6 text-center">

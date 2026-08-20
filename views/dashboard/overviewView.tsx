@@ -68,13 +68,13 @@ function isSearchQuery(text: string) {
   return /\b(search|look up|google|find online|web search)\b/i.test(text)
 }
 
-function resolveSendToast(reason: "credits" | "attachments" | "busy") {
+function resolveSendToast(reason: "credits" | "busy" | "too_large") {
   if (reason === "credits") {
     toast.error("You're out of credits")
     return
   }
-  if (reason === "attachments") {
-    toast.error("File attachments are not supported yet.")
+  if (reason === "too_large") {
+    toast.error("Each file must be under 10 MB.")
     return
   }
   if (reason === "busy") {
@@ -153,10 +153,31 @@ function OverviewChatPanelInner({
   const [copied, setCopied] = useState<string | null>(null)
   const [liked, setLiked] = useState<Record<string, "up" | "down" | null>>({})
   const [mounted, setMounted] = useState(false)
+  const [showReplyEmoji, setShowReplyEmoji] = useState(false)
+  const wasBusyRef = useRef(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (isBusy) {
+      wasBusyRef.current = true
+      setShowReplyEmoji(true)
+      return
+    }
+
+    if (!wasBusyRef.current) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShowReplyEmoji(false)
+      wasBusyRef.current = false
+    }, 5_000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [isBusy])
 
   useEffect(() => {
     registerTrackFailure(() => {
@@ -214,10 +235,11 @@ function OverviewChatPanelInner({
 
   async function sendChat(text: string) {
     const trimmed = text.trim()
-    const hasAttachments = attachments.length > 0
-    if ((!trimmed && !hasAttachments) || isBusy) return
+    const files = attachments.map((item) => item.file)
+    if ((!trimmed && files.length === 0) || isBusy) return
 
-    const result = await sendMessage(trimmed, { hasAttachments })
+    const pending = attachments
+    const result = await sendMessage(trimmed, { files })
     if (!result.ok) {
       if (result.reason !== "empty") {
         resolveSendToast(result.reason)
@@ -227,6 +249,9 @@ function OverviewChatPanelInner({
 
     setInput("")
     setAttachments([])
+    for (const item of pending) {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+    }
   }
 
   function handleSend() {
@@ -324,7 +349,7 @@ function OverviewChatPanelInner({
                           key={message.id}
                           message={message}
                           lastAssistant={lastAssistant}
-                          isBusy={isBusy}
+                          showReplyEmoji={showReplyEmoji}
                           chatMood={chatMood}
                           copied={copied}
                           liked={liked}
@@ -383,7 +408,7 @@ function OverviewChatPanelInner({
 function ChatMessageRow({
   message,
   lastAssistant,
-  isBusy,
+  showReplyEmoji,
   chatMood,
   copied,
   liked,
@@ -393,7 +418,7 @@ function ChatMessageRow({
 }: {
   message: EveMessage
   lastAssistant: EveMessage | undefined
-  isBusy: boolean
+  showReplyEmoji: boolean
   chatMood: ChatEmojiMood
   copied: string | null
   liked: Record<string, "up" | "down" | null>
@@ -402,6 +427,7 @@ function ChatMessageRow({
   onRegenerate: () => void
 }) {
   const content = eveMessageText(message)
+  const fileParts = message.parts.filter((part) => part.type === "file")
   const isLatestAssistant = message.role === "assistant" && message.id === lastAssistant?.id
 
   return (
@@ -412,6 +438,32 @@ function ChatMessageRow({
       {message.role === "user" ? (
         <Message align="end">
           <MessageContent>
+            {fileParts.length > 0 ? (
+              <div className="mb-2 flex flex-wrap justify-end gap-2">
+                {fileParts.map((part, index) => {
+                  const isImage = part.mediaType.startsWith("image/")
+                  if (isImage && part.url) {
+                    return (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={`${message.id}-file-${index}`}
+                        src={part.url}
+                        alt={part.filename ?? "Attachment"}
+                        className="max-h-48 max-w-[min(100%,16rem)] rounded-xl object-cover"
+                      />
+                    )
+                  }
+                  return (
+                    <span
+                      key={`${message.id}-file-${index}`}
+                      className="rounded-xl bg-secondary px-3 py-2 text-xs text-secondary-foreground"
+                    >
+                      {part.filename ?? part.mediaType}
+                    </span>
+                  )
+                })}
+              </div>
+            ) : null}
             {content ? (
               <Bubble variant="secondary" align="end">
                 <BubbleContent>{content}</BubbleContent>
@@ -441,7 +493,7 @@ function ChatMessageRow({
           <MessageContent>
             <Bubble variant="ghost" align="start">
               <BubbleContent className="flex w-full max-w-full items-start gap-1.5 text-sm leading-relaxed">
-                {isLatestAssistant && !isBusy ? (
+                {isLatestAssistant && showReplyEmoji ? (
                   <ChatEmoji mood={chatMood} className="mt-0.5 size-6 shrink-0" />
                 ) : null}
                 <MessageResponse className="size-auto min-w-0 flex-1">

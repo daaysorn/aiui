@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Page Open Graph descriptions/subtitles must stay on one line (short; no multi-line marketing copy under the title).
 - Form/page subtitles (the muted helper text under a heading) must be 4-6 words max — no long marketing copy.
 - Never add border lines (`border`, `border-*`, `divide-*`) to any element unless the user explicitly instructs it. Use background color (`bg-muted`, `bg-card`, etc.) or spacing to create visual separation instead.
-- The dashboard inset (the rounded main content panel) uses a muted outline only (`outline-muted-foreground/20`). Never use a strong border or full-opacity outline there.
+- The dashboard inset (the rounded main content panel) has no outline or border. Never add outline or border lines there; separate with background and spacing only.
 - Never use em dashes in user-facing content.
 - Long unbroken strings (tokens, URLs, env lines, hashes) must wrap: `min-w-0` with `break-all` / `overflow-wrap-anywhere`.
 - Links, enabled buttons, and dropdown/menu items use a pointer cursor. Never use `cursor-default` on menu rows.

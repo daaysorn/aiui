@@ -161,7 +161,7 @@ export function DashboardShell({
         <DashboardSidebar />
 
         <SidebarFooter>
-          <div className="flex min-w-0 items-center gap-2 rounded-lg p-1.5 outline-solid outline-1 outline-transparent transition-colors hover:bg-sidebar-accent hover:outline-border has-data-open:bg-sidebar-accent has-data-open:outline-border">
+          <div className="flex min-w-0 items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-sidebar-accent has-data-open:bg-sidebar-accent">
             <DropdownMenu>
               <DropdownMenuTrigger className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 overflow-hidden text-left outline-none">
                 <Avatar className="size-8 overflow-hidden">
@@ -230,7 +230,7 @@ export function DashboardShell({
               <Button
                 variant="ghost"
                 size="xs"
-                className="shrink-0 rounded-full px-3 text-foreground outline-solid outline-1 outline-border hover:bg-transparent hover:text-foreground active:translate-y-0"
+                className="shrink-0 rounded-full bg-muted px-3 text-foreground hover:bg-muted hover:text-foreground active:translate-y-0"
                 onClick={() => setPlansOpen(true)}
               >
                 Upgrade

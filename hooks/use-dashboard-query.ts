@@ -69,7 +69,7 @@ export function useCreditTransactions(workspaceId?: string | null) {
     queryFn: () =>
       fetchCreditTransactions({
         workspaceId,
-        limit: 20,
+        limit: 100,
       }),
     enabled: Boolean(workspaceId),
   })
