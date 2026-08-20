@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useCustomer, useListEvents } from "autumn-js/react"
+import { useEffect, useMemo, useState } from "react"
+import { useCustomer } from "autumn-js/react"
 import { toast } from "sonner"
 
 import { openBillingPortalAction } from "@/app/(dashboard)/dashboard/billing/actions"
@@ -15,7 +15,11 @@ import {
   SettingsStatGrid,
 } from "@/components/dashboard/settings-ui"
 import { Button } from "@/components/ui/button"
-import { useUserOverview } from "@/hooks/use-dashboard-query"
+import {
+  useCreditTransactions,
+  useUserOverview,
+} from "@/hooks/use-dashboard-query"
+import type { Transaction } from "@/lib/api/types"
 import {
   creditUsagePercent,
   formatCredits,
@@ -33,6 +37,14 @@ import {
   formatUsageEventTime,
 } from "@/lib/billing/usage-labels"
 
+type UsageHistoryEvent = {
+  id: string
+  featureId: string
+  value: number
+  timestamp: number
+  properties?: Record<string, unknown>
+}
+
 function formatBillingDate(epochMs: number | null | undefined): string | null {
   if (!epochMs || !Number.isFinite(epochMs)) {
     return null
@@ -41,6 +53,24 @@ function formatBillingDate(epochMs: number | null | undefined): string | null {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
     new Date(epochMs)
   )
+}
+
+function ledgerToUsageEvent(row: Transaction): UsageHistoryEvent | null {
+  if (row.amount >= 0) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    featureId: AUTUMN_CREDITS_FEATURE_ID,
+    value: Math.abs(row.amount),
+    timestamp: new Date(row.createdAt).getTime(),
+    properties: {
+      reason: row.reason ?? undefined,
+      projectId: row.projectId ?? undefined,
+      source: row.projectId ? "project_build" : "dashboard_chat",
+    },
+  }
 }
 
 function CreditUsageProgress({
@@ -104,13 +134,7 @@ function CreditUsageHistory({
   events,
   loading,
 }: {
-  events: Array<{
-    id: string
-    featureId: string
-    value: number
-    timestamp: number
-    properties?: Record<string, unknown>
-  }>
+  events: UsageHistoryEvent[]
   loading: boolean
 }) {
   if (loading) {
@@ -150,22 +174,28 @@ function CreditUsageHistory({
 export function BillingSettingsPanel() {
   const { data: overview } = useUserOverview()
   const { data: customer, isLoading: customerLoading, refetch } = useCustomer()
+  const workspaceId = overview?.billing.workspaceId ?? null
   const {
-    list: events,
-    isLoading: eventsLoading,
-    refetch: refetchEvents,
-  } = useListEvents({
-    featureId: AUTUMN_CREDITS_FEATURE_ID,
-    limit: 20,
-  })
+    data: ledgerPage,
+    isLoading: ledgerLoading,
+    refetch: refetchLedger,
+  } = useCreditTransactions(workspaceId)
   const [plansOpen, setPlansOpen] = useState(false)
   const [portalPending, setPortalPending] = useState(false)
 
   useEffect(() => {
     if (!overview) return
     void refetch()
-    void refetchEvents()
-  }, [overview, refetch, refetchEvents])
+    void refetchLedger()
+  }, [overview, refetch, refetchLedger])
+
+  const usageEvents = useMemo(() => {
+    const rows = ledgerPage?.transactions ?? []
+    return rows
+      .map(ledgerToUsageEvent)
+      .filter((event): event is UsageHistoryEvent => event !== null)
+      .slice(0, 20)
+  }, [ledgerPage?.transactions])
 
   if (!overview) return null
 
@@ -177,9 +207,11 @@ export function BillingSettingsPanel() {
     autumnCreditsUsage(customer)
   )
   const creditGranted = autumnUsage?.granted ?? overview.billing.credits.granted
-  const creditUsed = autumnUsage?.usage ?? Math.max(0, creditGranted - overview.billing.credits.balance)
-  const creditRemaining = autumnUsage?.remaining ?? overview.billing.credits.balance
-  const usageEvents = (events ?? []).filter((event) => event.value > 0)
+  const creditUsed =
+    autumnUsage?.usage ??
+    Math.max(0, creditGranted - overview.billing.credits.balance)
+  const creditRemaining =
+    autumnUsage?.remaining ?? overview.billing.credits.balance
   const periodEnd = formatBillingDate(subscription.currentPeriodEnd)
   const cancelAt = formatBillingDate(subscription.canceledAt)
 
@@ -266,7 +298,7 @@ export function BillingSettingsPanel() {
       </SettingsCard>
 
       <SettingsCard title="Recent usage" description="How credits were spent.">
-        <CreditUsageHistory events={usageEvents} loading={eventsLoading} />
+        <CreditUsageHistory events={usageEvents} loading={ledgerLoading} />
       </SettingsCard>
 
       {showUpgrade ? (

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   fetchBillingPlans,
   fetchCatalog,
+  fetchCreditTransactions,
   fetchLinkedAccounts,
   fetchProject,
   fetchProjects,
@@ -59,6 +60,18 @@ export function useRecentChats() {
   return useQuery({
     queryKey: queryKeys.recentChats,
     queryFn: fetchRecentChats,
+  })
+}
+
+export function useCreditTransactions(workspaceId?: string | null) {
+  return useQuery({
+    queryKey: queryKeys.creditTransactions(workspaceId),
+    queryFn: () =>
+      fetchCreditTransactions({
+        workspaceId,
+        limit: 20,
+      }),
+    enabled: Boolean(workspaceId),
   })
 }
 

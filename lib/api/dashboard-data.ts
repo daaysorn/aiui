@@ -9,10 +9,11 @@ import type {
   LinkedAccount,
   Project,
   ProjectDetail,
-  ProjectThread,
   RecentChat,
+  TransactionPage,
   UserOverview,
   UserSession,
+  WorkspaceThread,
 } from "@/lib/api/types"
 import { getUserOverview } from "@/lib/session"
 
@@ -53,32 +54,74 @@ export async function fetchCatalog(kind: CatalogKind): Promise<CatalogItem[]> {
 }
 
 export async function fetchRecentChats(): Promise<RecentChat[]> {
-  const projects = await fetchProjects()
-  const lists = await Promise.all(
-    projects.map(async (project) => {
-      try {
-        const result = await serverApiRequest<{ threads: ProjectThread[] }>(
-          `/v1/projects/${project.id}/threads`
-        )
-        return result.threads.map((thread) => ({
-          id: thread.id,
-          title: thread.title,
-          projectId: project.id,
-          projectName: project.name,
-          updatedAt: thread.updatedAt,
-        }))
-      } catch {
-        return []
-      }
-    })
+  const result = await serverApiRequest<{ recents: RecentChat[] }>(
+    "/v1/workspace/recents"
   )
+  return result.recents ?? []
+}
 
-  return lists
-    .flat()
-    .sort(
-      (left, right) =>
-        new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+export async function fetchWorkspaceThread(
+  threadId: string
+): Promise<WorkspaceThread | null> {
+  try {
+    return await serverApiRequest<WorkspaceThread>(
+      `/v1/workspace/threads/${threadId}`
     )
+  } catch {
+    return null
+  }
+}
+
+export async function createWorkspaceThread(
+  title: string
+): Promise<WorkspaceThread> {
+  return serverApiRequest<WorkspaceThread>("/v1/workspace/threads", {
+    method: "POST",
+    json: { title },
+  })
+}
+
+export async function updateWorkspaceThread(
+  threadId: string,
+  patch: { title?: string; eveSessionId?: string | null; status?: string }
+): Promise<WorkspaceThread> {
+  return serverApiRequest<WorkspaceThread>(`/v1/workspace/threads/${threadId}`, {
+    method: "PATCH",
+    json: patch,
+  })
+}
+
+export async function deleteWorkspaceThread(threadId: string): Promise<void> {
+  await serverApiRequest(`/v1/workspace/threads/${threadId}`, {
+    method: "DELETE",
+  })
+}
+
+export async function deleteProjectThread(
+  projectId: string,
+  threadId: string
+): Promise<void> {
+  await serverApiRequest(`/v1/projects/${projectId}/threads/${threadId}`, {
+    method: "DELETE",
+  })
+}
+
+export async function clearRecentChats(): Promise<void> {
+  await serverApiRequest("/v1/workspace/recents", {
+    method: "DELETE",
+  })
+}
+
+export async function deleteRecentChat(chat: {
+  id: string
+  scope: "workspace" | "project"
+  parentId: string
+}): Promise<void> {
+  if (chat.scope === "workspace") {
+    await deleteWorkspaceThread(chat.id)
+    return
+  }
+  await deleteProjectThread(chat.parentId, chat.id)
 }
 
 export async function fetchLinkedAccounts(): Promise<LinkedAccount[]> {
@@ -89,4 +132,19 @@ export async function fetchLinkedAccounts(): Promise<LinkedAccount[]> {
 export async function fetchSessions(): Promise<UserSession[]> {
   const result = await serverApiRequest<UserSession[]>("/v1/user/sessions")
   return Array.isArray(result) ? result : []
+}
+
+export async function fetchCreditTransactions(input?: {
+  workspaceId?: string | null
+  limit?: number
+}): Promise<TransactionPage> {
+  const params = new URLSearchParams()
+  params.set("limit", String(input?.limit ?? 20))
+  params.set("offset", "0")
+  if (input?.workspaceId) {
+    params.set("workspaceId", input.workspaceId)
+  }
+  return serverApiRequest<TransactionPage>(
+    `/v1/transactions?${params.toString()}`
+  )
 }

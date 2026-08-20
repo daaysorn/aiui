@@ -7,17 +7,23 @@ export type SavedDashboardChat = {
   session?: ClientSessionState
 }
 
-export function dashboardChatStorageKey(userId: string): string {
-  return `${STORAGE_PREFIX}${userId}`
+export function dashboardChatStorageKey(
+  userId: string,
+  threadId: string
+): string {
+  return `${STORAGE_PREFIX}${userId}:${threadId}`
 }
 
-export function loadDashboardChat(userId: string | undefined): SavedDashboardChat {
-  if (!userId || typeof window === "undefined") {
+export function loadDashboardChat(
+  userId: string | undefined,
+  threadId: string | undefined
+): SavedDashboardChat {
+  if (!userId || !threadId || typeof window === "undefined") {
     return {}
   }
 
   try {
-    const raw = sessionStorage.getItem(dashboardChatStorageKey(userId))
+    const raw = sessionStorage.getItem(dashboardChatStorageKey(userId, threadId))
     if (!raw) {
       return {}
     }
@@ -27,25 +33,32 @@ export function loadDashboardChat(userId: string | undefined): SavedDashboardCha
   }
 }
 
-export function saveDashboardChat(userId: string, payload: SavedDashboardChat): void {
+export function saveDashboardChat(
+  userId: string,
+  threadId: string,
+  payload: SavedDashboardChat
+): void {
   if (typeof window === "undefined") {
     return
   }
 
   try {
-    sessionStorage.setItem(dashboardChatStorageKey(userId), JSON.stringify(payload))
+    sessionStorage.setItem(
+      dashboardChatStorageKey(userId, threadId),
+      JSON.stringify(payload)
+    )
   } catch {
     // Private mode or quota exceeded.
   }
 }
 
-export function clearDashboardChat(userId: string): void {
+export function clearDashboardChat(userId: string, threadId: string): void {
   if (typeof window === "undefined") {
     return
   }
 
   try {
-    sessionStorage.removeItem(dashboardChatStorageKey(userId))
+    sessionStorage.removeItem(dashboardChatStorageKey(userId, threadId))
   } catch {
     // ignore
   }

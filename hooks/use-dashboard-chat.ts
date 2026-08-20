@@ -1,15 +1,23 @@
 "use client"
 
-import { useCallback, useMemo, useRef } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useEveAgent, type EveMessage } from "eve/react"
 
 import { useBillingGate } from "@/hooks/use-billing-gate"
 import { CHAT_MESSAGE_CREDIT_COST } from "@/lib/billing/features"
 import {
+  createWorkspaceThread,
+  updateWorkspaceThread,
+} from "@/lib/api/dashboard-data"
+import {
   loadDashboardChat,
   saveDashboardChat,
   type SavedDashboardChat,
 } from "@/lib/chat/dashboard-session-storage"
+import { hydrateEveSession } from "@/lib/chat/eve-session-hydrate"
+import { threadTitleFromMessage } from "@/lib/chat/thread-title"
+import { queryKeys } from "@/lib/query/keys"
 
 export function eveMessageText(message: Pick<EveMessage, "parts">): string {
   return message.parts
@@ -22,45 +30,134 @@ export type DashboardChatSendResult =
   | { ok: true }
   | { ok: false; reason: "empty" | "credits" | "busy" | "attachments" }
 
+type UseDashboardChatBootstrapInput = {
+  userId: string | undefined
+  threadId: string | null
+}
+
+export function useDashboardChatBootstrap({
+  userId,
+  threadId,
+}: UseDashboardChatBootstrapInput) {
+  const [initial, setInitial] = useState<SavedDashboardChat>({})
+  const [ready, setReady] = useState(!threadId)
+
+  useEffect(() => {
+    if (!threadId || !userId) {
+      setInitial({})
+      setReady(true)
+      return
+    }
+
+    let cancelled = false
+
+    async function load() {
+      setReady(false)
+      const cached = loadDashboardChat(userId!, threadId!)
+      if (cached.events?.length) {
+        if (!cancelled) {
+          setInitial(cached)
+          setReady(true)
+        }
+        return
+      }
+
+      try {
+        const { fetchWorkspaceThread } = await import("@/lib/api/dashboard-data")
+        const thread = await fetchWorkspaceThread(threadId!)
+        if (thread?.eveSessionId) {
+          const snapshot = await hydrateEveSession(thread.eveSessionId)
+          if (!cancelled) {
+            const payload = {
+              events: snapshot.events,
+              session: snapshot.session,
+            }
+            setInitial(payload)
+            saveDashboardChat(userId!, threadId!, payload)
+          }
+        } else if (!cancelled) {
+          setInitial({})
+        }
+      } catch {
+        if (!cancelled) {
+          setInitial({})
+        }
+      } finally {
+        if (!cancelled) {
+          setReady(true)
+        }
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [threadId, userId])
+
+  return useMemo(() => ({ ready, initial }), [ready, initial])
+}
+
 type UseDashboardChatInput = {
   userId: string | undefined
   workspaceId: string | null
+  threadId: string | null
+  initial: SavedDashboardChat
+  onThreadCreated?: (threadId: string) => void
 }
 
 export function useDashboardChat({
   userId,
   workspaceId,
+  threadId,
+  initial,
+  onThreadCreated,
 }: UseDashboardChatInput) {
+  const queryClient = useQueryClient()
   const { ensureAccess, recordUsage } = useBillingGate()
   const chargeAfterTurnRef = useRef(false)
   const trackFailureRef = useRef<(() => void) | null>(null)
+  const threadIdRef = useRef<string | null>(threadId)
+  const createdThreadRef = useRef(false)
 
-  const saved = useMemo((): SavedDashboardChat => {
-    if (!userId) {
-      return {}
-    }
-    return loadDashboardChat(userId)
-  }, [userId])
+  if (threadId && threadIdRef.current !== threadId) {
+    threadIdRef.current = threadId
+    createdThreadRef.current = true
+  }
 
   const agent = useEveAgent({
-    initialEvents: saved.events,
-    initialSession: saved.session,
+    initialEvents: initial.events,
+    initialSession: initial.session,
     prepareSend: (input) => ({
       ...input,
       clientContext: {
         surface: "dashboard",
         ...(workspaceId ? { workspaceId } : {}),
+        ...(threadIdRef.current ? { threadId: threadIdRef.current } : {}),
       },
     }),
     onError: () => {
       chargeAfterTurnRef.current = false
     },
     onFinish: (snapshot) => {
-      if (userId) {
-        saveDashboardChat(userId, {
+      const activeThreadId = threadIdRef.current
+      if (userId && activeThreadId) {
+        saveDashboardChat(userId, activeThreadId, {
           events: snapshot.events,
           session: snapshot.session,
         })
+
+        const sessionId = snapshot.session?.sessionId
+        if (sessionId) {
+          void updateWorkspaceThread(activeThreadId, {
+            eveSessionId: sessionId,
+          })
+            .then(() =>
+              queryClient.invalidateQueries({ queryKey: queryKeys.recentChats })
+            )
+            .catch(() => {})
+        }
       }
 
       if (!chargeAfterTurnRef.current) {
@@ -78,6 +175,24 @@ export function useDashboardChat({
   })
 
   const isBusy = agent.status === "submitted" || agent.status === "streaming"
+
+  const ensureThread = useCallback(
+    async (titleSource: string) => {
+      if (threadIdRef.current) {
+        return threadIdRef.current
+      }
+
+      const thread = await createWorkspaceThread(threadTitleFromMessage(titleSource))
+      threadIdRef.current = thread.id
+      if (!createdThreadRef.current) {
+        createdThreadRef.current = true
+        onThreadCreated?.(thread.id)
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.recentChats })
+      return thread.id
+    },
+    [onThreadCreated, queryClient]
+  )
 
   const sendMessage = useCallback(
     async (text: string, options?: { hasAttachments?: boolean }): Promise<DashboardChatSendResult> => {
@@ -99,11 +214,17 @@ export function useDashboardChat({
         return { ok: false, reason: "credits" }
       }
 
+      try {
+        await ensureThread(trimmed)
+      } catch {
+        return { ok: false, reason: "busy" }
+      }
+
       chargeAfterTurnRef.current = true
       await agent.send(trimmed)
       return { ok: true }
     },
-    [agent, ensureAccess, isBusy]
+    [agent, ensureAccess, ensureThread, isBusy]
   )
 
   const regenerate = useCallback(async (): Promise<DashboardChatSendResult> => {

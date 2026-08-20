@@ -7,6 +7,7 @@ import { DashboardSection } from "@/components/dashboard/dashboard-shell"
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { Input } from "@/components/ui/input"
 import { useRecentChats } from "@/hooks/use-dashboard-query"
+import { recentChatHref } from "@/lib/chat/thread-title"
 
 export function SearchView() {
   const { data: recents, isPending } = useRecentChats()
@@ -19,7 +20,7 @@ export function SearchView() {
     return items.filter(
       (chat) =>
         chat.title.toLowerCase().includes(value) ||
-        chat.projectName.toLowerCase().includes(value)
+        chat.parentName.toLowerCase().includes(value)
     )
   }, [query, recents])
 
@@ -42,14 +43,14 @@ export function SearchView() {
         ) : (
           <ul className="flex flex-col gap-2">
             {matches.map((chat) => (
-              <li key={chat.id}>
+              <li key={`${chat.scope}:${chat.id}`}>
                 <Link
-                  href={`/dashboard/projects/${chat.projectId}`}
+                  href={recentChatHref(chat)}
                   className="block rounded-xl bg-card px-4 py-3 transition-colors hover:bg-accent/40"
                 >
                   <p className="truncate font-medium">{chat.title}</p>
                   <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {chat.projectName}
+                    {chat.parentName}
                   </p>
                 </Link>
               </li>

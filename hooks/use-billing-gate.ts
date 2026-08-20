@@ -78,7 +78,12 @@ export function useBillingGate() {
       }
 
       await refetch()
-      await queryClient.invalidateQueries({ queryKey: queryKeys.overview })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.overview }),
+        queryClient.invalidateQueries({
+          queryKey: ["credit-transactions"],
+        }),
+      ])
     },
     [queryClient, refetch]
   )

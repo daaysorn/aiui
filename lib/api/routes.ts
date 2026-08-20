@@ -74,11 +74,19 @@
  * POST   /v1/projects/:id/threads     { title }
  * GET    /v1/projects/:id/threads/:threadId → ProjectThread
  * PATCH  /v1/projects/:id/threads/:threadId { title?, eveSessionId?, status? }
+ * DELETE /v1/projects/:id/threads/:threadId
  *
  * --- Catalog (/v1/catalog/*) ---
  * GET    /v1/catalog                  ?kind=skill|mcp|plugin → { items: CatalogItem[] }
  *
  * --- Workspace settings (/v1/workspace/*) ---
+ * GET    /v1/workspace/recents        ?limit=50 → { recents: RecentChat[] }
+ * DELETE /v1/workspace/recents        clear all recent chats
+ * GET    /v1/workspace/threads       → { threads: WorkspaceThread[] }
+ * POST   /v1/workspace/threads       { title } → WorkspaceThread
+ * GET    /v1/workspace/threads/:threadId → WorkspaceThread
+ * PATCH  /v1/workspace/threads/:threadId { title?, eveSessionId?, status? }
+ * DELETE /v1/workspace/threads/:threadId
  * GET    /v1/workspace/capabilities   ?kind=… → { items: WorkspaceItem[] }
  * PATCH  /v1/workspace/capabilities   { items: [{ catalogItemId, enabled, bodyMarkdown?, mcpUrl? }] }
  *

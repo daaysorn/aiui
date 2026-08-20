@@ -5,6 +5,8 @@ export const queryKeys = {
   billingPlans: ["billing-plans"] as const,
   catalog: (kind: string) => ["catalog", kind] as const,
   recentChats: ["recent-chats"] as const,
+  creditTransactions: (workspaceId?: string | null) =>
+    ["credit-transactions", workspaceId ?? "all"] as const,
   linkedAccounts: ["linked-accounts"] as const,
   sessions: ["user-sessions"] as const,
   channels: ["channels"] as const,

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowClockwiseIcon,
   CheckIcon,
@@ -42,10 +43,13 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { eveMessageText, useDashboardChat } from "@/hooks/use-dashboard-chat"
+import {
+  eveMessageText,
+  useDashboardChat,
+  useDashboardChatBootstrap,
+} from "@/hooks/use-dashboard-chat"
 import { useChatMoodSounds } from "@/hooks/use-chat-mood-sounds"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
-import { clearDashboardChat } from "@/lib/chat/dashboard-session-storage"
 
 const CHAT_SUGGESTIONS = [
   "What can you help with?",
@@ -83,14 +87,57 @@ function OverviewChatPanel({
   userId,
   workspaceId,
   firstName,
+  threadId,
   showSuggestions = false,
   onNewConversation,
+  onThreadCreated,
 }: {
   userId: string
   workspaceId: string | null
   firstName: string
+  threadId: string | null
   showSuggestions?: boolean
   onNewConversation: () => void
+  onThreadCreated: (threadId: string) => void
+}) {
+  const bootstrap = useDashboardChatBootstrap({ userId, threadId })
+
+  if (!bootstrap.ready) {
+    return <DashboardSkeleton />
+  }
+
+  return (
+    <OverviewChatPanelInner
+      userId={userId}
+      workspaceId={workspaceId}
+      firstName={firstName}
+      threadId={threadId}
+      initial={bootstrap.initial}
+      showSuggestions={showSuggestions}
+      onNewConversation={onNewConversation}
+      onThreadCreated={onThreadCreated}
+    />
+  )
+}
+
+function OverviewChatPanelInner({
+  userId,
+  workspaceId,
+  firstName,
+  threadId,
+  initial,
+  showSuggestions = false,
+  onNewConversation,
+  onThreadCreated,
+}: {
+  userId: string
+  workspaceId: string | null
+  firstName: string
+  threadId: string | null
+  initial: Parameters<typeof useDashboardChat>[0]["initial"]
+  showSuggestions?: boolean
+  onNewConversation: () => void
+  onThreadCreated: (threadId: string) => void
 }) {
   const {
     messages,
@@ -99,7 +146,13 @@ function OverviewChatPanel({
     sendMessage,
     regenerate,
     registerTrackFailure,
-  } = useDashboardChat({ userId, workspaceId })
+  } = useDashboardChat({
+    userId,
+    workspaceId,
+    threadId,
+    initial,
+    onThreadCreated,
+  })
 
   const [input, setInput] = useState("")
   const [attachments, setAttachments] = useState<ComposerFile[]>([])
@@ -469,24 +522,53 @@ export function OverviewView({
 }: {
   showSuggestions?: boolean
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: overview } = useUserOverview()
+  const urlThreadId = searchParams.get("thread")
   const [sessionEpoch, setSessionEpoch] = useState(0)
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(urlThreadId)
+  const skipUrlThreadSyncRef = useRef(false)
+
+  useEffect(() => {
+    if (skipUrlThreadSyncRef.current) {
+      skipUrlThreadSyncRef.current = false
+      setActiveThreadId(urlThreadId)
+      return
+    }
+
+    if (urlThreadId === activeThreadId) {
+      return
+    }
+
+    setActiveThreadId(urlThreadId)
+    setSessionEpoch((value) => value + 1)
+  }, [activeThreadId, urlThreadId])
 
   if (!overview) {
     return <DashboardSkeleton />
   }
 
   const firstName = overview.user.name.split(" ")[0] ?? ""
+  const panelKey = `${overview.user.id}:${sessionEpoch}`
 
   return (
     <OverviewChatPanel
-      key={`${overview.user.id}:${sessionEpoch}`}
+      key={panelKey}
       userId={overview.user.id}
       workspaceId={overview.billing.workspaceId}
       firstName={firstName}
+      threadId={activeThreadId}
       showSuggestions={showSuggestions}
+      onThreadCreated={(id) => {
+        skipUrlThreadSyncRef.current = true
+        setActiveThreadId(id)
+        router.replace(`/dashboard?thread=${id}`, { scroll: false })
+      }}
       onNewConversation={() => {
-        clearDashboardChat(overview.user.id)
+        skipUrlThreadSyncRef.current = true
+        setActiveThreadId(null)
+        router.replace("/dashboard", { scroll: false })
         setSessionEpoch((value) => value + 1)
       }}
     />

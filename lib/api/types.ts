@@ -209,8 +209,19 @@ export type CatalogItem = {
 export type RecentChat = {
   id: string
   title: string
-  projectId: string
-  projectName: string
+  scope: "workspace" | "project"
+  parentId: string
+  parentName: string
+  updatedAt: string
+}
+
+export type WorkspaceThread = {
+  id: string
+  workspaceId: string
+  title: string
+  eveSessionId: string | null
+  status: string
+  createdAt: string
   updatedAt: string
 }
 
@@ -254,18 +265,17 @@ export type OrganizationFull = Organization & {
 
 export type Transaction = {
   id: string
-  audience: string
-  targetId: string
+  workspaceId: string
   amount: number
-  reason: string
+  reason: string | null
   actorId: string | null
   projectId: string | null
   createdAt: string
 }
 
 export type TransactionPage = {
-  items: Transaction[]
+  transactions: Transaction[]
   total: number
-  page: number
-  pageSize: number
+  limit: number
+  offset: number
 }

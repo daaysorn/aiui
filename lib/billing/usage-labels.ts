@@ -12,16 +12,27 @@ const FEATURE_USAGE_LABELS: Record<string, string> = {
   ai_tokens: "AI tokens",
 }
 
+const LEDGER_REASON_LABELS: Record<string, string> = {
+  "included usage": "Dashboard chat",
+  "extra usage": "Extra usage",
+  "signup grant": "Signup grant",
+}
+
 export function creditUsageEventLabel(event: UsageEventLike): string {
   const source = event.properties?.source
   if (typeof source === "string" && source.trim()) {
     if (source === "dashboard_chat") return "Dashboard chat"
+    if (source === "project_build") return "Project build"
     return source.trim()
   }
 
   const reason = event.properties?.reason
   if (typeof reason === "string" && reason.trim()) {
-    return reason.trim()
+    return LEDGER_REASON_LABELS[reason] ?? reason.trim()
+  }
+
+  if (event.properties?.projectId) {
+    return "Project build"
   }
 
   return FEATURE_USAGE_LABELS[event.featureId] ?? event.featureId
