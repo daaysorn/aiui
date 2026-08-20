@@ -6,8 +6,10 @@ import {
   ArrowClockwiseIcon,
   CheckIcon,
   CopyIcon,
+  PencilSimpleIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  XIcon,
 } from "@phosphor-icons/react"
 import type { EveMessage } from "eve/react"
 import { toast } from "sonner"
@@ -154,6 +156,7 @@ function OverviewChatPanelInner({
   const [attachments, setAttachments] = useState<ComposerFile[]>([])
   const [copied, setCopied] = useState<string | null>(null)
   const [liked, setLiked] = useState<Record<string, "up" | "down" | null>>({})
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const [showReplyEmoji, setShowReplyEmoji] = useState(false)
   const [isAwaitingReply, setIsAwaitingReply] = useState(false)
@@ -172,6 +175,7 @@ function OverviewChatPanelInner({
     }
 
     setIsAwaitingReply(false)
+    setEditingId(null)
 
     if (!wasBusyRef.current) {
       return
@@ -205,6 +209,30 @@ function OverviewChatPanelInner({
 
   function toggleLike(id: string, dir: "up" | "down") {
     setLiked((prev) => ({ ...prev, [id]: prev[id] === dir ? null : dir }))
+  }
+
+  function beginEditMessage(id: string) {
+    if (isBusy || isAwaitingReply) return
+    setEditingId(id)
+  }
+
+  function cancelEditMessage() {
+    setEditingId(null)
+  }
+
+  async function saveEditedMessage(message: EveMessage, nextText: string) {
+    const trimmed = nextText.trim()
+    if (!trimmed || isBusy || isAwaitingReply) return
+
+    setEditingId(null)
+
+    if (message.role === "assistant") {
+      setInput(trimmed)
+      toast.message("Edited text is in the composer.")
+      return
+    }
+
+    await sendChat(trimmed)
   }
 
   async function regenerateLast() {
@@ -397,7 +425,8 @@ function OverviewChatPanelInner({
                             key={message.id}
                             message={message}
                             lastAssistant={lastAssistant}
-                            isBusy={isBusy}
+                            isBusy={isBusy || isAwaitingReply}
+                            isEditing={editingId === message.id}
                             showReplyEmoji={showReplyEmoji}
                             chatMood={chatMood}
                             copied={copied}
@@ -405,6 +434,9 @@ function OverviewChatPanelInner({
                             onCopy={copyContent}
                             onToggleLike={toggleLike}
                             onRegenerate={regenerateLast}
+                            onBeginEdit={beginEditMessage}
+                            onCancelEdit={cancelEditMessage}
+                            onSaveEdit={saveEditedMessage}
                           />
                         )
                       })}
@@ -459,6 +491,7 @@ function ChatMessageRow({
   message,
   lastAssistant,
   isBusy,
+  isEditing,
   showReplyEmoji,
   chatMood,
   copied,
@@ -466,10 +499,14 @@ function ChatMessageRow({
   onCopy,
   onToggleLike,
   onRegenerate,
+  onBeginEdit,
+  onCancelEdit,
+  onSaveEdit,
 }: {
   message: EveMessage
   lastAssistant: EveMessage | undefined
   isBusy: boolean
+  isEditing: boolean
   showReplyEmoji: boolean
   chatMood: ChatEmojiMood
   copied: string | null
@@ -477,15 +514,35 @@ function ChatMessageRow({
   onCopy: (id: string, content: string) => void
   onToggleLike: (id: string, dir: "up" | "down") => void
   onRegenerate: () => void
+  onBeginEdit: (id: string) => void
+  onCancelEdit: () => void
+  onSaveEdit: (message: EveMessage, text: string) => void
 }) {
   const content = eveMessageText(message)
+  const [draft, setDraft] = useState(content)
   const fileParts = message.parts.filter((part) => part.type === "file")
   const isLatestAssistant =
     message.role === "assistant" && message.id === lastAssistant?.id
   // Copy / like / regen only after the turn finishes.
   const showAssistantActions = isLatestAssistant ? !isBusy : true
   const showAssistantEmoji =
-    isLatestAssistant && showReplyEmoji && Boolean(content)
+    isLatestAssistant && showReplyEmoji && Boolean(content) && !isEditing
+  const canEdit = !isBusy && Boolean(content)
+
+  useEffect(() => {
+    if (isEditing) {
+      setDraft(content)
+    }
+  }, [content, isEditing])
+
+  function commitEdit() {
+    const trimmed = draft.trim()
+    if (!trimmed || trimmed === content) {
+      onCancelEdit()
+      return
+    }
+    onSaveEdit(message, trimmed)
+  }
 
   return (
     <MessageScrollerItem
@@ -521,7 +578,29 @@ function ChatMessageRow({
                 })}
               </div>
             ) : null}
-            {content ? (
+            {isEditing ? (
+              <Bubble variant="secondary" align="end">
+                <BubbleContent className="w-full min-w-[min(100%,18rem)]">
+                  <textarea
+                    value={draft}
+                    autoFocus
+                    rows={Math.min(8, Math.max(2, draft.split("\n").length))}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault()
+                        onCancelEdit()
+                      }
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault()
+                        commitEdit()
+                      }
+                    }}
+                    className="min-h-16 w-full resize-y bg-transparent text-sm leading-relaxed outline-none"
+                  />
+                </BubbleContent>
+              </Bubble>
+            ) : content ? (
               <Bubble variant="secondary" align="end">
                 <BubbleContent>
                   <CollapsibleUserBubbleText>
@@ -532,19 +611,55 @@ function ChatMessageRow({
             ) : null}
             <MessageFooter className="justify-end">
               <MessageActions>
-                <MessageAction
-                  size="icon-xs"
-                  className="text-muted-foreground hover:text-foreground"
-                  tooltip="Copy"
-                  label="Copy"
-                  onClick={() => onCopy(message.id, content)}
-                >
-                  {copied === message.id ? (
-                    <CheckIcon className="text-foreground" />
-                  ) : (
-                    <CopyIcon />
-                  )}
-                </MessageAction>
+                {isEditing ? (
+                  <>
+                    <MessageAction
+                      size="icon-xs"
+                      className="text-muted-foreground hover:text-foreground"
+                      tooltip="Cancel"
+                      label="Cancel"
+                      onClick={onCancelEdit}
+                    >
+                      <XIcon />
+                    </MessageAction>
+                    <MessageAction
+                      size="icon-xs"
+                      className="text-muted-foreground hover:text-foreground"
+                      tooltip="Save"
+                      label="Save"
+                      onClick={commitEdit}
+                    >
+                      <CheckIcon />
+                    </MessageAction>
+                  </>
+                ) : (
+                  <>
+                    <MessageAction
+                      size="icon-xs"
+                      className="text-muted-foreground hover:text-foreground"
+                      tooltip="Copy"
+                      label="Copy"
+                      onClick={() => onCopy(message.id, content)}
+                    >
+                      {copied === message.id ? (
+                        <CheckIcon className="text-foreground" />
+                      ) : (
+                        <CopyIcon />
+                      )}
+                    </MessageAction>
+                    {canEdit ? (
+                      <MessageAction
+                        size="icon-xs"
+                        className="text-muted-foreground hover:text-foreground"
+                        tooltip="Edit"
+                        label="Edit"
+                        onClick={() => onBeginEdit(message.id)}
+                      >
+                        <PencilSimpleIcon />
+                      </MessageAction>
+                    ) : null}
+                  </>
+                )}
               </MessageActions>
             </MessageFooter>
           </MessageContent>
@@ -557,58 +672,119 @@ function ChatMessageRow({
                 {showAssistantEmoji ? (
                   <ChatEmoji mood={chatMood} className="mt-0.5 size-6 shrink-0" />
                 ) : null}
-                <MessageResponse className="size-auto min-w-0 flex-1">
-                  {content}
-                </MessageResponse>
+                {isEditing ? (
+                  <textarea
+                    value={draft}
+                    autoFocus
+                    rows={Math.min(12, Math.max(3, draft.split("\n").length))}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault()
+                        onCancelEdit()
+                      }
+                      if (
+                        (event.metaKey || event.ctrlKey) &&
+                        event.key === "Enter"
+                      ) {
+                        event.preventDefault()
+                        commitEdit()
+                      }
+                    }}
+                    className="min-h-20 w-full min-w-0 flex-1 resize-y bg-transparent text-sm leading-relaxed outline-none"
+                  />
+                ) : (
+                  <MessageResponse className="size-auto min-w-0 flex-1">
+                    {content}
+                  </MessageResponse>
+                )}
               </BubbleContent>
             </Bubble>
-            {showAssistantActions ? (
+            {showAssistantActions || isEditing ? (
               <MessageFooter>
                 <MessageActions>
-                  <MessageAction
-                    size="icon-xs"
-                    className="text-muted-foreground hover:text-foreground"
-                    tooltip="Copy"
-                    label="Copy"
-                    onClick={() => onCopy(message.id, content)}
-                  >
-                    {copied === message.id ? (
-                      <CheckIcon className="text-foreground" />
-                    ) : (
-                      <CopyIcon />
-                    )}
-                  </MessageAction>
-                  <MessageAction
-                    size="icon-xs"
-                    tooltip="Good response"
-                    label="Good response"
-                    onClick={() => onToggleLike(message.id, "up")}
-                  >
-                    <ThumbsUpIcon
-                      weight={liked[message.id] === "up" ? "fill" : "regular"}
-                    />
-                  </MessageAction>
-                  <MessageAction
-                    size="icon-xs"
-                    tooltip="Bad response"
-                    label="Bad response"
-                    onClick={() => onToggleLike(message.id, "down")}
-                  >
-                    <ThumbsDownIcon
-                      weight={liked[message.id] === "down" ? "fill" : "regular"}
-                    />
-                  </MessageAction>
-                  {isLatestAssistant ? (
-                    <MessageAction
-                      size="icon-xs"
-                      className="text-muted-foreground hover:text-foreground"
-                      tooltip="Regenerate"
-                      label="Regenerate"
-                      onClick={onRegenerate}
-                    >
-                      <ArrowClockwiseIcon />
-                    </MessageAction>
-                  ) : null}
+                  {isEditing ? (
+                    <>
+                      <MessageAction
+                        size="icon-xs"
+                        className="text-muted-foreground hover:text-foreground"
+                        tooltip="Cancel"
+                        label="Cancel"
+                        onClick={onCancelEdit}
+                      >
+                        <XIcon />
+                      </MessageAction>
+                      <MessageAction
+                        size="icon-xs"
+                        className="text-muted-foreground hover:text-foreground"
+                        tooltip="Use in composer"
+                        label="Use in composer"
+                        onClick={commitEdit}
+                      >
+                        <CheckIcon />
+                      </MessageAction>
+                    </>
+                  ) : (
+                    <>
+                      <MessageAction
+                        size="icon-xs"
+                        className="text-muted-foreground hover:text-foreground"
+                        tooltip="Copy"
+                        label="Copy"
+                        onClick={() => onCopy(message.id, content)}
+                      >
+                        {copied === message.id ? (
+                          <CheckIcon className="text-foreground" />
+                        ) : (
+                          <CopyIcon />
+                        )}
+                      </MessageAction>
+                      {canEdit ? (
+                        <MessageAction
+                          size="icon-xs"
+                          className="text-muted-foreground hover:text-foreground"
+                          tooltip="Edit"
+                          label="Edit"
+                          onClick={() => onBeginEdit(message.id)}
+                        >
+                          <PencilSimpleIcon />
+                        </MessageAction>
+                      ) : null}
+                      <MessageAction
+                        size="icon-xs"
+                        tooltip="Good response"
+                        label="Good response"
+                        onClick={() => onToggleLike(message.id, "up")}
+                      >
+                        <ThumbsUpIcon
+                          weight={liked[message.id] === "up" ? "fill" : "regular"}
+                        />
+                      </MessageAction>
+                      <MessageAction
+                        size="icon-xs"
+                        tooltip="Bad response"
+                        label="Bad response"
+                        onClick={() => onToggleLike(message.id, "down")}
+                      >
+                        <ThumbsDownIcon
+                          weight={
+                            liked[message.id] === "down" ? "fill" : "regular"
+                          }
+                        />
+                      </MessageAction>
+                      {isLatestAssistant ? (
+                        <MessageAction
+                          size="icon-xs"
+                          className="text-muted-foreground hover:text-foreground"
+                          tooltip="Regenerate"
+                          label="Regenerate"
+                          onClick={onRegenerate}
+                        >
+                          <ArrowClockwiseIcon />
+                        </MessageAction>
+                      ) : null}
+                    </>
+                  )}
                 </MessageActions>
               </MessageFooter>
             ) : null}

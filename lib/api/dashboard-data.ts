@@ -91,6 +91,31 @@ export async function updateWorkspaceThread(
   })
 }
 
+export async function updateProjectThread(
+  projectId: string,
+  threadId: string,
+  patch: { title?: string; eveSessionId?: string | null; status?: string }
+): Promise<WorkspaceThread> {
+  return serverApiRequest<WorkspaceThread>(
+    `/v1/projects/${projectId}/threads/${threadId}`,
+    {
+      method: "PATCH",
+      json: patch,
+    }
+  )
+}
+
+export async function renameRecentChat(
+  chat: Pick<RecentChat, "id" | "scope" | "parentId">,
+  title: string
+): Promise<void> {
+  if (chat.scope === "workspace") {
+    await updateWorkspaceThread(chat.id, { title })
+    return
+  }
+  await updateProjectThread(chat.parentId, chat.id, { title })
+}
+
 export async function deleteWorkspaceThread(threadId: string): Promise<void> {
   await serverApiRequest(`/v1/workspace/threads/${threadId}`, {
     method: "DELETE",

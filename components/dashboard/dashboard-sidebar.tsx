@@ -49,6 +49,7 @@ import {
 import {
   clearRecentChats,
   deleteRecentChat,
+  renameRecentChat,
 } from "@/lib/api/dashboard-data"
 import type { RecentChat } from "@/lib/api/types"
 import { useChannels, useProjects, useRecentChats, useUserOverview } from "@/hooks/use-dashboard-query"
@@ -60,6 +61,8 @@ import {
 } from "@/lib/chat/thread-title"
 import { queryKeys } from "@/lib/query/keys"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 const primaryNav = [
   { href: "/dashboard", label: "New bot", icon: PencilSimpleIcon, exact: true },
@@ -94,10 +97,12 @@ function NavButton({
 function RecentChatItem({
   chat,
   isActive,
+  onRequestEdit,
   onRequestDelete,
 }: {
   chat: RecentChat
   isActive: boolean
+  onRequestEdit: (chat: RecentChat) => void
   onRequestDelete: (chat: RecentChat) => void
 }) {
   return (
@@ -117,6 +122,10 @@ function RecentChatItem({
           <DotsThreeVerticalIcon weight="bold" />
         </SidebarMenuAction>
         <DropdownMenuContent side="right" align="start" className="min-w-36">
+          <DropdownMenuItem onClick={() => onRequestEdit(chat)}>
+            <PencilSimpleIcon />
+            Edit title
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onClick={() => onRequestDelete(chat)}
@@ -141,6 +150,8 @@ function DashboardSidebar() {
   const { data: recents } = useRecentChats()
   const [mutating, setMutating] = useState(false)
   const [chatToDelete, setChatToDelete] = useState<RecentChat | null>(null)
+  const [chatToEdit, setChatToEdit] = useState<RecentChat | null>(null)
+  const [editTitle, setEditTitle] = useState("")
   const [clearAllOpen, setClearAllOpen] = useState(false)
 
   const organisations = overview?.organizations ?? []
@@ -187,6 +198,50 @@ function DashboardSidebar() {
       queryClient.getQueryData<RecentChat[]>(queryKeys.recentChats) ?? []
     queryClient.setQueryData<RecentChat[]>(queryKeys.recentChats, [])
     return previous
+  }
+
+  function openEditChat(chat: RecentChat) {
+    setChatToEdit(chat)
+    setEditTitle(chat.title)
+  }
+
+  function confirmEditChat() {
+    const chat = chatToEdit
+    const title = editTitle.trim().replace(/\s+/g, " ")
+    if (!chat || mutating) return
+    if (!title) {
+      toast.error("Title cannot be empty.")
+      return
+    }
+    if (title.length > 120) {
+      toast.error("Title is too long.")
+      return
+    }
+    if (title === chat.title) {
+      setChatToEdit(null)
+      return
+    }
+
+    const previous =
+      queryClient.getQueryData<RecentChat[]>(queryKeys.recentChats) ?? []
+    queryClient.setQueryData<RecentChat[]>(
+      queryKeys.recentChats,
+      previous.map((item) =>
+        item.scope === chat.scope && item.id === chat.id
+          ? { ...item, title }
+          : item
+      )
+    )
+    setChatToEdit(null)
+    setMutating(true)
+    void renameRecentChat(chat, title)
+      .catch(() => {
+        queryClient.setQueryData(queryKeys.recentChats, previous)
+        toast.error("Could not rename chat.")
+      })
+      .finally(() => {
+        setMutating(false)
+      })
   }
 
   function confirmDeleteChat() {
@@ -405,6 +460,7 @@ function DashboardSidebar() {
                         chat.scope === "workspace" &&
                         activeThreadId === chat.id
                       }
+                      onRequestEdit={openEditChat}
                       onRequestDelete={setChatToDelete}
                     />
                   ))}
@@ -414,6 +470,50 @@ function DashboardSidebar() {
           </SidebarGroup>
         ) : null}
       </SidebarContent>
+
+      <Dialog
+        open={chatToEdit !== null}
+        onOpenChange={(open) => {
+          if (!open) setChatToEdit(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-heading text-lg font-semibold">
+              Edit chat title
+            </DialogTitle>
+            <DialogDescription>Choose a short title.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="recent-chat-title">Title</Label>
+            <Input
+              id="recent-chat-title"
+              value={editTitle}
+              maxLength={120}
+              autoFocus
+              onChange={(event) => setEditTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  confirmEditChat()
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              disabled={mutating}
+              onClick={() => setChatToEdit(null)}
+            >
+              Cancel
+            </Button>
+            <Button loading={mutating} onClick={confirmEditChat}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={chatToDelete !== null}

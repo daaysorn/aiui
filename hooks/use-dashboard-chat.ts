@@ -57,8 +57,9 @@ export function useDashboardChatBootstrap({
       return
     }
 
-    // First message just created this thread. Keep the live agent; do not reload.
-    if ((previous === null || previous === undefined) && threadId) {
+    // Same panel: first message created this thread — keep the live agent.
+    // Do not skip when previous is undefined (fresh mount / Recents navigation).
+    if (previous === null && threadId) {
       setReady(true)
       return
     }
