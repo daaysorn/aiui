@@ -17,29 +17,27 @@ export function DashboardSkeleton() {
 export function ChatWindowSkeleton() {
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
       aria-busy="true"
       aria-label="Loading chat"
     >
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-hidden px-4 py-4">
-          <div className="mx-auto flex max-w-2xl flex-col gap-4">
-            <div className="flex justify-center py-1">
-              <Skeleton className="h-4 w-14 rounded-full" />
-            </div>
+      <div className="relative min-h-0 flex-1 overflow-hidden px-4 py-4">
+        <div className="mx-auto flex max-w-2xl flex-col gap-4">
+          <div className="flex justify-center py-1">
+            <Skeleton className="h-4 w-14 rounded-full" />
+          </div>
 
-            <div className="flex justify-end">
-              <Skeleton className="h-12 w-[min(100%,18rem)] rounded-2xl" />
-            </div>
-            <div className="flex justify-start">
-              <Skeleton className="h-20 w-[min(100%,22rem)] rounded-2xl" />
-            </div>
-            <div className="flex justify-end">
-              <Skeleton className="h-10 w-[min(100%,14rem)] rounded-2xl" />
-            </div>
-            <div className="flex justify-start">
-              <Skeleton className="h-16 w-[min(100%,20rem)] rounded-2xl" />
-            </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-12 w-[min(100%,18rem)] rounded-2xl" />
+          </div>
+          <div className="flex justify-start">
+            <Skeleton className="h-20 w-[min(100%,22rem)] rounded-2xl" />
+          </div>
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-[min(100%,14rem)] rounded-2xl" />
+          </div>
+          <div className="flex justify-start">
+            <Skeleton className="h-16 w-[min(100%,20rem)] rounded-2xl" />
           </div>
         </div>
       </div>

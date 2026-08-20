@@ -268,113 +268,113 @@ function OverviewChatPanelInner({
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="relative flex min-h-0 flex-1 flex-col">
-          {!hasMessages ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-              <h1 className="inline-flex max-w-full flex-row items-center justify-center gap-2 font-heading text-2xl font-semibold tracking-tight xs:text-3xl">
-                <GreetingEmoji className="size-8 xs:size-10" />
-                <span className="min-w-0" suppressHydrationWarning>
-                  {greet(firstName)}
-                </span>
-              </h1>
-              <div className="w-full">
-                <ChatComposer
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onSend={handleSend}
-                  onTranscript={handleTranscript}
-                  attachments={attachments}
-                  onAddFiles={handleAddFiles}
-                  onRemoveFile={handleRemoveFile}
-                  streaming={isBusy}
-                />
-                {showSuggestions ? (
-                  <div className="mt-3">
-                    <Suggestions className="mx-auto">
-                      {CHAT_SUGGESTIONS.map((suggestion) => (
-                        <Suggestion
-                          key={suggestion}
-                          suggestion={suggestion}
-                          onClick={handleSuggestion}
-                          disabled={isBusy}
-                        />
-                      ))}
-                    </Suggestions>
-                  </div>
-                ) : null}
-                <p className="mt-3 text-center text-xs text-muted-foreground/40">
-                  Daaybot can make mistakes. Check important info.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <MessageScrollerProvider autoScroll>
-              <MessageScroller className="min-h-0 flex-1">
-                <MessageScrollerViewport className="px-4 py-4">
-                  <MessageScrollerContent className="mx-auto max-w-2xl">
-                    <Marker variant="separator">
-                      <MarkerContent>Today</MarkerContent>
-                    </Marker>
-
-                    {messages.map((message) => (
-                      <ChatMessageRow
-                        key={message.id}
-                        message={message}
-                        lastAssistant={lastAssistant}
-                        isBusy={isBusy}
-                        chatMood={chatMood}
-                        copied={copied}
-                        liked={liked}
-                        onCopy={copyContent}
-                        onToggleLike={toggleLike}
-                        onRegenerate={regenerateLast}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {!hasMessages ? (
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 px-4">
+            <h1 className="inline-flex max-w-full flex-row items-center justify-center gap-2 font-heading text-2xl font-semibold tracking-tight xs:text-3xl">
+              <GreetingEmoji className="size-8 xs:size-10" />
+              <span className="min-w-0" suppressHydrationWarning>
+                {greet(firstName)}
+              </span>
+            </h1>
+            <div className="w-full">
+              <ChatComposer
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onSend={handleSend}
+                onTranscript={handleTranscript}
+                attachments={attachments}
+                onAddFiles={handleAddFiles}
+                onRemoveFile={handleRemoveFile}
+                streaming={isBusy}
+              />
+              {showSuggestions ? (
+                <div className="mt-3">
+                  <Suggestions className="mx-auto">
+                    {CHAT_SUGGESTIONS.map((suggestion) => (
+                      <Suggestion
+                        key={suggestion}
+                        suggestion={suggestion}
+                        onClick={handleSuggestion}
+                        disabled={isBusy}
                       />
                     ))}
-
-                    {showThinking ? (
-                      <MessageScrollerItem messageId="__streaming__">
-                        <Message align="start">
-                          <MessageContent>
-                            <Bubble variant="ghost" align="start">
-                              <BubbleContent className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                <ChatEmoji mood={chatMood} className="size-6 shrink-0" />
-                                <Shimmer as="span">
-                                  {chatMood === "searching" ? "Searching…" : "Thinking…"}
-                                </Shimmer>
-                              </BubbleContent>
-                            </Bubble>
-                          </MessageContent>
-                        </Message>
-                      </MessageScrollerItem>
-                    ) : null}
-                  </MessageScrollerContent>
-                </MessageScrollerViewport>
-                <MessageScrollerButton />
-              </MessageScroller>
-            </MessageScrollerProvider>
-          )}
-        </div>
-
-        {hasMessages ? (
-          <div className="shrink-0 bg-background px-4 py-3">
-            <ChatComposer
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onSend={handleSend}
-              onTranscript={handleTranscript}
-              attachments={attachments}
-              onAddFiles={handleAddFiles}
-              onRemoveFile={handleRemoveFile}
-              streaming={isBusy}
-            />
-            <p className="mt-2 text-center text-xs text-muted-foreground/40">
-              Daaybot can make mistakes. Check important info.
-            </p>
+                  </Suggestions>
+                </div>
+              ) : null}
+              <p className="mt-3 text-center text-xs text-muted-foreground/40">
+                Daaybot can make mistakes. Check important info.
+              </p>
+            </div>
           </div>
-        ) : null}
+        ) : (
+          <>
+            <div className="relative min-h-0 flex-1 overflow-hidden">
+              <MessageScrollerProvider autoScroll>
+                <MessageScroller className="absolute inset-0 h-auto">
+                  <MessageScrollerViewport className="px-4 py-4">
+                    <MessageScrollerContent className="mx-auto max-w-2xl">
+                      <Marker variant="separator">
+                        <MarkerContent>Today</MarkerContent>
+                      </Marker>
+
+                      {messages.map((message) => (
+                        <ChatMessageRow
+                          key={message.id}
+                          message={message}
+                          lastAssistant={lastAssistant}
+                          isBusy={isBusy}
+                          chatMood={chatMood}
+                          copied={copied}
+                          liked={liked}
+                          onCopy={copyContent}
+                          onToggleLike={toggleLike}
+                          onRegenerate={regenerateLast}
+                        />
+                      ))}
+
+                      {showThinking ? (
+                        <MessageScrollerItem messageId="__streaming__">
+                          <Message align="start">
+                            <MessageContent>
+                              <Bubble variant="ghost" align="start">
+                                <BubbleContent className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                  <ChatEmoji mood={chatMood} className="size-6 shrink-0" />
+                                  <Shimmer as="span">
+                                    {chatMood === "searching" ? "Searching…" : "Thinking…"}
+                                  </Shimmer>
+                                </BubbleContent>
+                              </Bubble>
+                            </MessageContent>
+                          </Message>
+                        </MessageScrollerItem>
+                      ) : null}
+                    </MessageScrollerContent>
+                  </MessageScrollerViewport>
+                  <MessageScrollerButton />
+                </MessageScroller>
+              </MessageScrollerProvider>
+            </div>
+
+            <div className="shrink-0 bg-background px-4 py-3">
+              <ChatComposer
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onSend={handleSend}
+                onTranscript={handleTranscript}
+                attachments={attachments}
+                onAddFiles={handleAddFiles}
+                onRemoveFile={handleRemoveFile}
+                streaming={isBusy}
+              />
+              <p className="mt-2 text-center text-xs text-muted-foreground/40">
+                Daaybot can make mistakes. Check important info.
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </TooltipProvider>
   )
