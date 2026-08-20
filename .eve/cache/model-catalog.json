@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-08-19T02:54:12.729Z",
+  "fetchedAt": "2026-08-20T05:25:28.206Z",
   "kind": "eve-model-catalog-cache",
   "models": [
     {
@@ -716,6 +716,20 @@
     {
       "slug": "alibaba/qwen3.8-27b",
       "providers": [
+        {
+          "provider": "alibaba",
+          "providerModelId": "qwen3.8-27b",
+          "contextWindowTokens": 1000000,
+          "maxOutputTokens": 131072,
+          "tags": [
+            "reasoning",
+            "tool-use",
+            "vision",
+            "implicit-caching",
+            "video-input",
+            "file-input"
+          ]
+        },
         {
           "provider": "deepinfra",
           "providerModelId": "Qwen/Qwen3.8-27B",
@@ -2549,7 +2563,24 @@
           "provider": "fish-audio",
           "providerModelId": "s1",
           "contextWindowTokens": 0,
-          "maxOutputTokens": 0
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "fish-audio/s1-free",
+      "providers": [
+        {
+          "provider": "fish-audio",
+          "providerModelId": "s1",
+          "contextWindowTokens": 0,
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
         }
       ]
     },
@@ -2560,7 +2591,24 @@
           "provider": "fish-audio",
           "providerModelId": "s2-pro",
           "contextWindowTokens": 0,
-          "maxOutputTokens": 0
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "fish-audio/s2-pro-free",
+      "providers": [
+        {
+          "provider": "fish-audio",
+          "providerModelId": "s2-pro",
+          "contextWindowTokens": 0,
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
         }
       ]
     },
@@ -2571,7 +2619,24 @@
           "provider": "fish-audio",
           "providerModelId": "s2.1-pro",
           "contextWindowTokens": 0,
-          "maxOutputTokens": 0
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "fish-audio/s2.1-pro-free",
+      "providers": [
+        {
+          "provider": "fish-audio",
+          "providerModelId": "s2.1-pro",
+          "contextWindowTokens": 0,
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
         }
       ]
     },
@@ -2582,7 +2647,24 @@
           "provider": "fish-audio",
           "providerModelId": "transcribe-1",
           "contextWindowTokens": 0,
-          "maxOutputTokens": 0
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "fish-audio/transcribe-1-free",
+      "providers": [
+        {
+          "provider": "fish-audio",
+          "providerModelId": "transcribe-1",
+          "contextWindowTokens": 0,
+          "maxOutputTokens": 0,
+          "tags": [
+            "free"
+          ]
         }
       ]
     },
@@ -7766,43 +7848,6 @@
             "reasoning",
             "tool-use",
             "implicit-caching"
-          ]
-        }
-      ]
-    },
-    {
-      "slug": "zai/glm-4.6v",
-      "providers": [
-        {
-          "provider": "zai",
-          "providerModelId": "glm-4.6v",
-          "contextWindowTokens": 128000,
-          "maxOutputTokens": 24000,
-          "tags": [
-            "vision",
-            "file-input",
-            "reasoning",
-            "tool-use",
-            "implicit-caching"
-          ]
-        }
-      ]
-    },
-    {
-      "slug": "zai/glm-4.6v-flash",
-      "providers": [
-        {
-          "provider": "zai",
-          "providerModelId": "GLM-4.6v-flash",
-          "contextWindowTokens": 128000,
-          "maxOutputTokens": 24000,
-          "tags": [
-            "vision",
-            "reasoning",
-            "file-input",
-            "tool-use",
-            "implicit-caching",
-            "free"
           ]
         }
       ]
