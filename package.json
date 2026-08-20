@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "node scripts/workflow-setup.mjs && eve build && next build",
+    "build": "eve build && next build",
     "start": "node scripts/start-with-eve.mjs",
     "start:next": "next start",
     "workflow:setup": "node scripts/workflow-setup.mjs",

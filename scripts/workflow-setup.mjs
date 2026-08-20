@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
  * Idempotent Eve Postgres workflow schema bootstrap.
- * Runs on `bun run build` and before Eve start on deploy.
+ * Runs before Eve start on deploy (`start-with-eve.mjs`) and via
+ * `bun run workflow:setup` locally. Do not run this during Docker/Coolify
+ * image build: Coolify internal DB hostnames (e.g. resource UUIDs) do not
+ * resolve inside BuildKit (`getaddrinfo ENOTFOUND`).
  *
  * Set WORKFLOW_POSTGRES_URL in Coolify / .env.local.
- * Local builds may skip with SKIP_WORKFLOW_SETUP=1 when the DB is
- * only reachable from the server network.
+ * Skip with SKIP_WORKFLOW_SETUP=1 when needed.
  */
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
@@ -48,7 +50,7 @@ const fromLocal =
 const workflowUrl = fromProcess || fromLocal
 if (!workflowUrl) {
   console.error(
-    "[workflow-setup] WORKFLOW_POSTGRES_URL is required. Set it in Coolify / .env.local, then rebuild."
+    "[workflow-setup] WORKFLOW_POSTGRES_URL is required. Set it in Coolify / .env.local."
   )
   process.exit(1)
 }
