@@ -269,7 +269,7 @@ function SettingsDialog({
       <DialogContent
         showCloseButton={false}
         overlayClassName="bg-black/70 supports-backdrop-filter:backdrop-blur-md"
-        className="flex h-[min(44rem,92svh)] w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-3xl bg-background p-0 shadow-lg sm:max-w-5xl sm:flex-row"
+        className="flex h-[min(44rem,92svh)] w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-3xl bg-background p-0 shadow-lg ring-1 ring-inset ring-border sm:max-w-5xl sm:flex-row"
       >
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">

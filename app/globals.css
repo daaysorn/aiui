@@ -252,6 +252,11 @@
   html {
     @apply font-sans;
   }
+  /* Keep inset/panel edge tokens from interpolating during theme toggles. */
+  [data-slot="sidebar-inset"],
+  [data-slot="dialog-content"] {
+    transition-property: opacity, transform;
+  }
   h1,
   h2,
   h3,

@@ -13,10 +13,18 @@ export type TenantCaller = {
   userId: string
 }
 
-export function requireTenantCaller(ctx: AuthSessionContext): TenantCaller {
+export function getTenantCaller(ctx: AuthSessionContext): TenantCaller | null {
   const caller = ctx.session.auth.current
   if (caller?.principalType !== "user" || !caller.principalId) {
-    throw new Error("An authenticated user is required.")
+    return null
   }
   return { userId: caller.principalId }
+}
+
+export function requireTenantCaller(ctx: AuthSessionContext): TenantCaller {
+  const scope = getTenantCaller(ctx)
+  if (!scope) {
+    throw new Error("An authenticated user is required.")
+  }
+  return scope
 }
