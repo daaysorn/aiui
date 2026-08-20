@@ -43,7 +43,8 @@
  * --- Billing (/v1/billing/*) ---
  * GET    /v1/billing/plans            ?audience=personal|organization → { plans: BillingPlan[] }
  * GET    /v1/billing/plans/:slug      → BillingPlan
- * GET    /v1/billing/gateway          → { provider, model, configured, ready }
+ * GET    /v1/billing/gateway          → { provider, model, configured, ready } (public policy)
+ * GET    /v1/internal/eve/gateway     → { provider, model, baseUrl, apiKey } (server-only; Bearer EVE_GATEWAY_INTERNAL_TOKEN)
  * POST   /v1/billing/customer         Ensure Autumn customer exists
  * POST   /v1/billing/check            { featureId, requiredBalance? } → { allowed, balance? }
  * POST   /v1/billing/track             { featureId, value? } → usage recorded

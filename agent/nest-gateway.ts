@@ -1,30 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai"
 import type { LanguageModel } from "ai"
 
-const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-const DEFAULT_CENCORI_BASE_URL = "https://api.cencori.com/v1"
-
 const GATEWAY_PROVIDERS = ["vercel", "openrouter", "litellm", "cencori"] as const
 
 export type NestGatewayProvider = (typeof GATEWAY_PROVIDERS)[number]
 
-export type NestGatewayPolicy = {
-  provider: NestGatewayProvider
-  model: string
-  configured: Record<NestGatewayProvider, boolean>
-  ready: boolean
-}
-
-type GatewayEnv = {
-  AI_GATEWAY_API_KEY?: string
-  OPENROUTER_API_KEY?: string
-  LITELLM_BASE_URL?: string
-  LITELLM_API_KEY?: string
-  CENCORI_API_KEY?: string
-  CENCORI_BASE_URL?: string
-}
-
-type GatewayRequest = {
+export type NestGatewayRuntime = {
   provider: NestGatewayProvider
   model: string
   baseUrl: string
@@ -37,7 +18,7 @@ type NestEnvelope<T> = {
   message?: string
 }
 
-let cachedPolicy: { value: NestGatewayPolicy; expiresAt: number } | null = null
+let cachedRuntime: { value: NestGatewayRuntime; expiresAt: number } | null = null
 
 function resolveApiOrigin(): string {
   const raw =
@@ -47,153 +28,84 @@ function resolveApiOrigin(): string {
   const origin = raw.replace(/\/$/, "")
   if (!origin) {
     throw new Error(
-      "NEXT_PUBLIC_API_URL is missing. Set it in aiui/.env.local so Daaybot can load gateway policy from Nest.",
+      "NEXT_PUBLIC_API_URL is missing. Set it in aiui/.env.local so Daaybot can reach Nest.",
     )
   }
   return origin
 }
 
-function readGatewayEnv(): GatewayEnv {
-  return {
-    AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY?.trim(),
-    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY?.trim(),
-    LITELLM_BASE_URL: process.env.LITELLM_BASE_URL?.trim(),
-    LITELLM_API_KEY: process.env.LITELLM_API_KEY?.trim(),
-    CENCORI_API_KEY: process.env.CENCORI_API_KEY?.trim(),
-    CENCORI_BASE_URL: process.env.CENCORI_BASE_URL?.trim(),
+function resolveInternalToken(): string {
+  const token = process.env.EVE_GATEWAY_INTERNAL_TOKEN?.trim()
+  if (!token) {
+    throw new Error(
+      "EVE_GATEWAY_INTERNAL_TOKEN is missing in aiui/.env.local. Copy the same value from builderbackend/.env.",
+    )
   }
+  return token
 }
 
 function isGatewayProvider(value: string): value is NestGatewayProvider {
   return (GATEWAY_PROVIDERS as readonly string[]).includes(value)
 }
 
-function providerCredentialHint(provider: NestGatewayProvider): string {
-  switch (provider) {
-    case "vercel":
-      return "AI_GATEWAY_API_KEY"
-    case "openrouter":
-      return "OPENROUTER_API_KEY"
-    case "litellm":
-      return "LITELLM_BASE_URL and LITELLM_API_KEY"
-    case "cencori":
-      return "CENCORI_API_KEY"
+function unwrapNestData<T>(body: NestEnvelope<T> | T): T {
+  if (body && typeof body === "object" && "data" in body && body.data) {
+    return body.data
   }
+  return body as T
 }
 
-function resolveGatewayRequest(
-  policy: NestGatewayPolicy,
-  env: GatewayEnv,
-): GatewayRequest | null {
-  const model = policy.model.trim()
-  if (!model) {
-    return null
-  }
-
-  switch (policy.provider) {
-    case "vercel": {
-      const apiKey = env.AI_GATEWAY_API_KEY ?? ""
-      if (!apiKey) {
-        return null
-      }
-      return {
-        provider: "vercel",
-        model,
-        baseUrl: "",
-        apiKey,
-      }
-    }
-    case "openrouter": {
-      const apiKey = env.OPENROUTER_API_KEY ?? ""
-      if (!apiKey) {
-        return null
-      }
-      return {
-        provider: "openrouter",
-        model,
-        baseUrl: OPENROUTER_BASE_URL,
-        apiKey,
-      }
-    }
-    case "litellm": {
-      const baseUrl = env.LITELLM_BASE_URL ?? ""
-      const apiKey = env.LITELLM_API_KEY ?? ""
-      if (!baseUrl || !apiKey) {
-        return null
-      }
-      return {
-        provider: "litellm",
-        model,
-        baseUrl,
-        apiKey,
-      }
-    }
-    case "cencori": {
-      const apiKey = env.CENCORI_API_KEY ?? ""
-      if (!apiKey) {
-        return null
-      }
-      return {
-        provider: "cencori",
-        model,
-        baseUrl: env.CENCORI_BASE_URL || DEFAULT_CENCORI_BASE_URL,
-        apiKey,
-      }
-    }
-  }
-}
-
-export async function fetchNestGatewayPolicy(): Promise<NestGatewayPolicy> {
+export async function fetchNestGatewayRuntime(): Promise<NestGatewayRuntime> {
   const now = Date.now()
-  if (cachedPolicy && cachedPolicy.expiresAt > now) {
-    return cachedPolicy.value
+  if (cachedRuntime && cachedRuntime.expiresAt > now) {
+    return cachedRuntime.value
   }
 
-  const response = await fetch(`${resolveApiOrigin()}/v1/billing/gateway`, {
+  const response = await fetch(`${resolveApiOrigin()}/v1/internal/eve/gateway`, {
     cache: "no-store",
+    headers: {
+      authorization: `Bearer ${resolveInternalToken()}`,
+    },
   })
 
   if (!response.ok) {
     throw new Error(
-      `Nest gateway policy request failed (${response.status}). Is builderbackend running?`,
+      `Nest gateway runtime request failed (${response.status}). Check EVE_GATEWAY_INTERNAL_TOKEN and builderbackend gateway env.`,
     )
   }
 
-  const body = (await response.json()) as NestEnvelope<NestGatewayPolicy> | NestGatewayPolicy
-  const policy = ("data" in body && body.data ? body.data : body) as NestGatewayPolicy
+  const runtime = unwrapNestData(
+    (await response.json()) as NestEnvelope<NestGatewayRuntime> | NestGatewayRuntime,
+  )
 
-  if (!isGatewayProvider(policy.provider) || !policy.model?.trim()) {
-    throw new Error("Nest returned an invalid AI gateway policy.")
+  if (
+    !isGatewayProvider(runtime.provider) ||
+    !runtime.model?.trim() ||
+    !runtime.apiKey?.trim()
+  ) {
+    throw new Error("Nest returned an invalid Eve gateway runtime payload.")
   }
 
-  cachedPolicy = {
-    value: policy,
+  cachedRuntime = {
+    value: runtime,
     expiresAt: now + 60_000,
   }
 
-  return policy
+  return runtime
 }
 
 export async function resolveNestGatewayModel(): Promise<string | LanguageModel> {
-  const policy = await fetchNestGatewayPolicy()
-  const env = readGatewayEnv()
-  const request = resolveGatewayRequest(policy, env)
+  const runtime = await fetchNestGatewayRuntime()
 
-  if (!request) {
-    const hint = providerCredentialHint(policy.provider)
-    throw new Error(
-      `AI gateway "${policy.provider}" is active in Nest but Daaybot is missing ${hint} in aiui/.env.local.`,
-    )
-  }
-
-  if (request.provider === "vercel") {
-    return request.model
+  if (runtime.provider === "vercel") {
+    process.env.AI_GATEWAY_API_KEY = runtime.apiKey
+    return runtime.model
   }
 
   const openai = createOpenAI({
-    baseURL: request.baseUrl.replace(/\/$/, ""),
-    apiKey: request.apiKey,
+    baseURL: runtime.baseUrl.replace(/\/$/, ""),
+    apiKey: runtime.apiKey,
   })
 
-  return openai.chat(request.model)
+  return openai.chat(runtime.model)
 }
