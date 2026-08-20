@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import {
   ArrowClockwiseIcon,
   CheckIcon,
@@ -25,6 +25,7 @@ import {
   ChatComposer,
   type ComposerFile,
 } from "@/components/dashboard/chat-composer"
+import { CollapsibleUserBubbleText } from "@/components/dashboard/collapsible-user-bubble-text"
 import { ChatWindowSkeleton, DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Marker, MarkerContent } from "@/components/ui/marker"
@@ -155,7 +156,9 @@ function OverviewChatPanelInner({
   const [liked, setLiked] = useState<Record<string, "up" | "down" | null>>({})
   const [mounted, setMounted] = useState(false)
   const [showReplyEmoji, setShowReplyEmoji] = useState(false)
+  const [isAwaitingReply, setIsAwaitingReply] = useState(false)
   const wasBusyRef = useRef(false)
+  const userCountBeforeSendRef = useRef(0)
 
   useEffect(() => {
     setMounted(true)
@@ -167,6 +170,8 @@ function OverviewChatPanelInner({
       setShowReplyEmoji(true)
       return
     }
+
+    setIsAwaitingReply(false)
 
     if (!wasBusyRef.current) {
       return
@@ -203,10 +208,18 @@ function OverviewChatPanelInner({
   }
 
   async function regenerateLast() {
-    if (isBusy) return
+    if (isBusy || isAwaitingReply) return
+    userCountBeforeSendRef.current = messages.reduce(
+      (count, message) => (message.role === "user" ? count + 1 : count),
+      0
+    )
+    setIsAwaitingReply(true)
     const result = await regenerate()
-    if (!result.ok && result.reason !== "empty") {
-      resolveSendToast(result.reason)
+    if (!result.ok) {
+      setIsAwaitingReply(false)
+      if (result.reason !== "empty") {
+        resolveSendToast(result.reason)
+      }
     }
   }
 
@@ -237,7 +250,7 @@ function OverviewChatPanelInner({
   async function sendChat(text: string) {
     const trimmed = text.trim()
     const files = attachments.map((item) => item.file)
-    if ((!trimmed && files.length === 0) || isBusy) return
+    if ((!trimmed && files.length === 0) || isBusy || isAwaitingReply) return
 
     const pending = attachments
     // Clear composer immediately; restore only if send fails to start.
@@ -247,8 +260,16 @@ function OverviewChatPanelInner({
       if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
     }
 
+    // Show thinking before Eve appends the user message (follow-ups).
+    userCountBeforeSendRef.current = messages.reduce(
+      (count, message) => (message.role === "user" ? count + 1 : count),
+      0
+    )
+    setIsAwaitingReply(true)
+
     const result = await sendMessage(trimmed, { files })
     if (!result.ok) {
+      setIsAwaitingReply(false)
       setInput(trimmed)
       if (result.reason !== "empty") {
         resolveSendToast(result.reason)
@@ -277,9 +298,25 @@ function OverviewChatPanelInner({
     .reverse()
     .find((message) => message.role === "assistant")
   const lastUserText = lastUser ? eveMessageText(lastUser) : ""
-  const lastAssistantText = lastAssistant ? eveMessageText(lastAssistant) : ""
+  const lastMessage = messages[messages.length - 1]
+  const userCount = messages.reduce(
+    (count, message) => (message.role === "user" ? count + 1 : count),
+    0
+  )
+  // Previous-turn assistant text must not hide wait UI on follow-ups.
+  const replyForCurrentTurnStarted = (() => {
+    if (isAwaitingReply && userCount <= userCountBeforeSendRef.current) {
+      return false
+    }
+    if (!lastMessage || lastMessage.role === "user") {
+      return false
+    }
+    return Boolean(eveMessageText(lastMessage))
+  })()
+  const showThinking =
+    (isBusy || isAwaitingReply) && !replyForCurrentTurnStarted
 
-  const chatMood: ChatEmojiMood = isBusy
+  const chatMood: ChatEmojiMood = isBusy || isAwaitingReply
     ? isSearchQuery(lastUserText || input)
       ? "searching"
       : "thinking"
@@ -288,8 +325,6 @@ function OverviewChatPanelInner({
       : lastUser && /^(huh+\??|\?\?+|what\??)$/i.test(lastUserText.trim())
         ? "confused"
         : "default"
-
-  const showThinking = isBusy && !lastAssistantText
 
   useChatMoodSounds(chatMood)
 
@@ -346,20 +381,33 @@ function OverviewChatPanelInner({
                         <MarkerContent>Today</MarkerContent>
                       </Marker>
 
-                      {messages.map((message) => (
-                        <ChatMessageRow
-                          key={message.id}
-                          message={message}
-                          lastAssistant={lastAssistant}
-                          showReplyEmoji={showReplyEmoji}
-                          chatMood={chatMood}
-                          copied={copied}
-                          liked={liked}
-                          onCopy={copyContent}
-                          onToggleLike={toggleLike}
-                          onRegenerate={regenerateLast}
-                        />
-                      ))}
+                      {messages.map((message) => {
+                        // Eve may insert an empty assistant shell before tokens.
+                        // Keep wait UI on the thinking row only (one emoji/shimmer).
+                        if (
+                          message.role === "assistant" &&
+                          isBusy &&
+                          !eveMessageText(message)
+                        ) {
+                          return null
+                        }
+
+                        return (
+                          <ChatMessageRow
+                            key={message.id}
+                            message={message}
+                            lastAssistant={lastAssistant}
+                            isBusy={isBusy}
+                            showReplyEmoji={showReplyEmoji}
+                            chatMood={chatMood}
+                            copied={copied}
+                            liked={liked}
+                            onCopy={copyContent}
+                            onToggleLike={toggleLike}
+                            onRegenerate={regenerateLast}
+                          />
+                        )
+                      })}
 
                       {showThinking ? (
                         <MessageScrollerItem messageId="__streaming__">
@@ -410,6 +458,7 @@ function OverviewChatPanelInner({
 function ChatMessageRow({
   message,
   lastAssistant,
+  isBusy,
   showReplyEmoji,
   chatMood,
   copied,
@@ -420,6 +469,7 @@ function ChatMessageRow({
 }: {
   message: EveMessage
   lastAssistant: EveMessage | undefined
+  isBusy: boolean
   showReplyEmoji: boolean
   chatMood: ChatEmojiMood
   copied: string | null
@@ -430,7 +480,12 @@ function ChatMessageRow({
 }) {
   const content = eveMessageText(message)
   const fileParts = message.parts.filter((part) => part.type === "file")
-  const isLatestAssistant = message.role === "assistant" && message.id === lastAssistant?.id
+  const isLatestAssistant =
+    message.role === "assistant" && message.id === lastAssistant?.id
+  // Copy / like / regen only after the turn finishes.
+  const showAssistantActions = isLatestAssistant ? !isBusy : true
+  const showAssistantEmoji =
+    isLatestAssistant && showReplyEmoji && Boolean(content)
 
   return (
     <MessageScrollerItem
@@ -468,7 +523,11 @@ function ChatMessageRow({
             ) : null}
             {content ? (
               <Bubble variant="secondary" align="end">
-                <BubbleContent>{content}</BubbleContent>
+                <BubbleContent>
+                  <CollapsibleUserBubbleText>
+                    {content}
+                  </CollapsibleUserBubbleText>
+                </BubbleContent>
               </Bubble>
             ) : null}
             <MessageFooter className="justify-end">
@@ -495,7 +554,7 @@ function ChatMessageRow({
           <MessageContent>
             <Bubble variant="ghost" align="start">
               <BubbleContent className="flex w-full max-w-full items-start gap-1.5 text-sm leading-relaxed">
-                {isLatestAssistant && showReplyEmoji ? (
+                {showAssistantEmoji ? (
                   <ChatEmoji mood={chatMood} className="mt-0.5 size-6 shrink-0" />
                 ) : null}
                 <MessageResponse className="size-auto min-w-0 flex-1">
@@ -503,50 +562,56 @@ function ChatMessageRow({
                 </MessageResponse>
               </BubbleContent>
             </Bubble>
-            <MessageFooter>
-              <MessageActions>
-                <MessageAction
-                  size="icon-xs"
-                  className="text-muted-foreground hover:text-foreground"
-                  tooltip="Copy"
-                  label="Copy"
-                  onClick={() => onCopy(message.id, content)}
-                >
-                  {copied === message.id ? (
-                    <CheckIcon className="text-foreground" />
-                  ) : (
-                    <CopyIcon />
-                  )}
-                </MessageAction>
-                <MessageAction
-                  size="icon-xs"
-                  tooltip="Good response"
-                  label="Good response"
-                  onClick={() => onToggleLike(message.id, "up")}
-                >
-                  <ThumbsUpIcon weight={liked[message.id] === "up" ? "fill" : "regular"} />
-                </MessageAction>
-                <MessageAction
-                  size="icon-xs"
-                  tooltip="Bad response"
-                  label="Bad response"
-                  onClick={() => onToggleLike(message.id, "down")}
-                >
-                  <ThumbsDownIcon weight={liked[message.id] === "down" ? "fill" : "regular"} />
-                </MessageAction>
-                {isLatestAssistant ? (
+            {showAssistantActions ? (
+              <MessageFooter>
+                <MessageActions>
                   <MessageAction
                     size="icon-xs"
                     className="text-muted-foreground hover:text-foreground"
-                    tooltip="Regenerate"
-                    label="Regenerate"
-                    onClick={onRegenerate}
+                    tooltip="Copy"
+                    label="Copy"
+                    onClick={() => onCopy(message.id, content)}
                   >
-                    <ArrowClockwiseIcon />
+                    {copied === message.id ? (
+                      <CheckIcon className="text-foreground" />
+                    ) : (
+                      <CopyIcon />
+                    )}
                   </MessageAction>
-                ) : null}
-              </MessageActions>
-            </MessageFooter>
+                  <MessageAction
+                    size="icon-xs"
+                    tooltip="Good response"
+                    label="Good response"
+                    onClick={() => onToggleLike(message.id, "up")}
+                  >
+                    <ThumbsUpIcon
+                      weight={liked[message.id] === "up" ? "fill" : "regular"}
+                    />
+                  </MessageAction>
+                  <MessageAction
+                    size="icon-xs"
+                    tooltip="Bad response"
+                    label="Bad response"
+                    onClick={() => onToggleLike(message.id, "down")}
+                  >
+                    <ThumbsDownIcon
+                      weight={liked[message.id] === "down" ? "fill" : "regular"}
+                    />
+                  </MessageAction>
+                  {isLatestAssistant ? (
+                    <MessageAction
+                      size="icon-xs"
+                      className="text-muted-foreground hover:text-foreground"
+                      tooltip="Regenerate"
+                      label="Regenerate"
+                      onClick={onRegenerate}
+                    >
+                      <ArrowClockwiseIcon />
+                    </MessageAction>
+                  ) : null}
+                </MessageActions>
+              </MessageFooter>
+            ) : null}
           </MessageContent>
         </Message>
       )}
@@ -555,27 +620,47 @@ function ChatMessageRow({
 }
 
 export function OverviewView({
+  threadId: urlThreadId = null,
   showSuggestions = false,
 }: {
+  threadId?: string | null
   showSuggestions?: boolean
 }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { data: overview } = useUserOverview()
-  const urlThreadId = searchParams.get("thread")
   const [sessionEpoch, setSessionEpoch] = useState(0)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(urlThreadId)
-  const skipUrlThreadSyncRef = useRef(false)
+  // Expect this path thread next (string = create, null = leave). undefined = normal sync.
+  const pendingUrlThreadRef = useRef<string | null | undefined>(undefined)
+  const ignoredStaleThreadRef = useRef<string | null>(null)
+  const urlThreadIdRef = useRef(urlThreadId)
+  urlThreadIdRef.current = urlThreadId
 
   useEffect(() => {
-    // First-message create sets the thread locally before `router.replace`
-    // updates searchParams. Keep waiting — do not sync stale null from the URL
-    // (that remounts the panel into a skeleton).
-    if (skipUrlThreadSyncRef.current) {
-      if (urlThreadId === activeThreadId) {
-        skipUrlThreadSyncRef.current = false
+    if (pendingUrlThreadRef.current !== undefined) {
+      if (urlThreadId === pendingUrlThreadRef.current) {
+        pendingUrlThreadRef.current = undefined
+        ignoredStaleThreadRef.current = null
+        return
       }
-      return
+
+      // Local create: wait until `/dashboard/chat/:id` lands.
+      if (pendingUrlThreadRef.current && !urlThreadId) {
+        return
+      }
+
+      // Local leave: ignore the thread we just left until the path clears.
+      if (
+        pendingUrlThreadRef.current === null &&
+        urlThreadId &&
+        urlThreadId === ignoredStaleThreadRef.current
+      ) {
+        return
+      }
+
+      // Recents click or other navigation — follow the URL.
+      pendingUrlThreadRef.current = undefined
+      ignoredStaleThreadRef.current = null
     }
 
     if (urlThreadId === activeThreadId) {
@@ -588,7 +673,8 @@ export function OverviewView({
 
   useEffect(() => {
     function onNewChat() {
-      skipUrlThreadSyncRef.current = true
+      pendingUrlThreadRef.current = null
+      ignoredStaleThreadRef.current = urlThreadIdRef.current
       setActiveThreadId(null)
       setSessionEpoch((value) => value + 1)
     }
@@ -615,9 +701,10 @@ export function OverviewView({
       threadId={activeThreadId}
       showSuggestions={showSuggestions}
       onThreadCreated={(id) => {
-        skipUrlThreadSyncRef.current = true
+        pendingUrlThreadRef.current = id
+        ignoredStaleThreadRef.current = null
         setActiveThreadId(id)
-        router.replace(`/dashboard?thread=${id}`, { scroll: false })
+        router.replace(`/dashboard/chat/${id}`, { scroll: false })
       }}
     />
   )

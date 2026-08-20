@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -56,6 +56,7 @@ import { clearDashboardChat } from "@/lib/chat/dashboard-session-storage"
 import {
   DASHBOARD_NEW_CHAT_EVENT,
   recentChatHref,
+  threadIdFromDashboardPath,
 } from "@/lib/chat/thread-title"
 import { queryKeys } from "@/lib/query/keys"
 import { cn } from "@/lib/utils"
@@ -132,9 +133,8 @@ function RecentChatItem({
 function DashboardSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
-  const activeThreadId = searchParams.get("thread")
+  const activeThreadId = threadIdFromDashboardPath(pathname)
   const { data: overview } = useUserOverview()
   const { data: projects } = useProjects()
   const { data: channels } = useChannels()
@@ -161,7 +161,7 @@ function DashboardSidebar() {
   const userId = overview?.user.id
 
   function leaveDeletedThread(chat?: RecentChat) {
-    if (pathname !== "/dashboard" || !activeThreadId) {
+    if (!activeThreadId) {
       return
     }
     if (!chat || (chat.scope === "workspace" && chat.id === activeThreadId)) {
@@ -403,7 +403,6 @@ function DashboardSidebar() {
                       chat={chat}
                       isActive={
                         chat.scope === "workspace" &&
-                        pathname === "/dashboard" &&
                         activeThreadId === chat.id
                       }
                       onRequestDelete={setChatToDelete}
