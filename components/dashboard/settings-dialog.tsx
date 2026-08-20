@@ -41,9 +41,11 @@ import { Switch } from "@/components/ui/switch"
 import { useUserOverview } from "@/hooks/use-dashboard-query"
 import { useSoundNotifications } from "@/hooks/use-sound-notifications"
 import { playMoodCue } from "@/lib/chat-sounds"
+import { autumnCreditsUsage } from "@/lib/billing/autumn-usage"
 import { formatCredits, isFreePlan } from "@/lib/billing"
 import { setSoundNotificationsEnabled } from "@/lib/sound-notifications"
 import { cn } from "@/lib/utils"
+import { useCustomer } from "autumn-js/react"
 import {
   changePasswordAction,
   type ChangePasswordState,
@@ -96,22 +98,40 @@ const allNavItems = navGroups.flatMap((group) => group.items)
 
 function BillingPanel() {
   const { data: overview } = useUserOverview()
+  const { data: customer, isLoading: customerLoading, refetch } = useCustomer()
   const [plansOpen, setPlansOpen] = useState(false)
+
+  useEffect(() => {
+    if (!overview) return
+    void refetch()
+  }, [overview, refetch])
 
   if (!overview) return null
 
   const planName = overview.billing.plan?.name ?? "Free"
-  const creditBalance = overview.billing.credits.balance
   const showUpgrade = isFreePlan(overview.billing.plan)
+  const autumnUsage = autumnCreditsUsage(customer)
+  const creditBalance = autumnUsage?.remaining ?? overview.billing.credits.balance
+  const creditGranted = autumnUsage?.granted ?? overview.billing.credits.granted
+  const creditUsed = autumnUsage?.usage ?? Math.max(0, creditGranted - creditBalance)
 
   return (
     <SettingsPanel>
       <SettingsStatGrid>
         <SettingsStat label="Current plan" value={planName} />
         <SettingsStat
-          label="Credits"
-          value={formatCredits(creditBalance)}
+          label="Credits left"
+          value={customerLoading && !autumnUsage ? "…" : formatCredits(creditBalance)}
           hint="Available this period"
+        />
+        <SettingsStat
+          label="Used this period"
+          value={customerLoading && !autumnUsage ? "…" : formatCredits(creditUsed)}
+          hint={
+            autumnUsage
+              ? `${formatCredits(creditGranted)} included`
+              : "Syncs when Autumn loads"
+          }
         />
       </SettingsStatGrid>
       {showUpgrade ? (

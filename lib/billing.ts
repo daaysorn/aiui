@@ -76,12 +76,29 @@ export function formatCredits(value: number): string {
     if (amount >= threshold) {
       const scaled = amount / threshold
       const decimals = scaled >= 100 ? 0 : 1
-      const formatted = scaled.toFixed(decimals).replace(/\.0$/, "")
+      const rounded = Math.round(scaled * 10 ** decimals) / 10 ** decimals
+      const formatted = rounded
+        .toFixed(decimals)
+        .replace(/\.0$/, "")
       return `${formatted}${suffix}`
     }
   }
 
   return String(amount)
+}
+
+/** Exact credit count for billing surfaces (no k rounding). */
+export function formatCreditsDetail(value: number): string {
+  const amount = Math.max(0, Number.isFinite(value) ? value : 0)
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount)
+}
+
+export function creditUsagePercent(used: number, granted: number): number {
+  if (!Number.isFinite(used) || !Number.isFinite(granted) || granted <= 0) {
+    return 0
+  }
+
+  return Math.min(100, Math.max(0, (used / granted) * 100))
 }
 
 export function billingPaymentUrl(data: unknown): string | null {
