@@ -105,6 +105,11 @@ function OverviewChatPanel({
   const [attachments, setAttachments] = useState<ComposerFile[]>([])
   const [copied, setCopied] = useState<string | null>(null)
   const [liked, setLiked] = useState<Record<string, "up" | "down" | null>>({})
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     registerTrackFailure(() => {
@@ -192,7 +197,7 @@ function OverviewChatPanel({
     }
   }
 
-  const hasMessages = messages.length > 0
+  const hasMessages = mounted && messages.length > 0
   const lastUser = [...messages].reverse().find((message) => message.role === "user")
   const lastAssistant = [...messages]
     .reverse()
