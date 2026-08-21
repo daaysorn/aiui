@@ -121,9 +121,9 @@ async function main() {
   const concurrency = Math.max(
     1,
     Number.parseInt(
-      process.env.WORKFLOW_POSTGRES_WORKER_CONCURRENCY?.trim() || "50",
+      process.env.WORKFLOW_POSTGRES_WORKER_CONCURRENCY?.trim() || "8",
       10
-    ) || 50
+    ) || 8
   )
   const maxPoolSize = Math.max(
     concurrency + 2,

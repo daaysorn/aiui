@@ -18,6 +18,7 @@ import {
   type SavedDashboardChat,
 } from "@/lib/chat/dashboard-session-storage"
 import { hydrateEveSession } from "@/lib/chat/eve-session-hydrate"
+import { prepareChatAttachment } from "@/lib/chat/prepare-attachment"
 import { summarizeThreadTitle } from "@/lib/chat/summarize-thread-title"
 import { threadTitleFromMessage } from "@/lib/chat/thread-title"
 import { queryKeys } from "@/lib/query/keys"
@@ -127,12 +128,14 @@ async function buildUserContent(
     return text
   }
 
+  const prepared = await Promise.all(files.map((file) => prepareChatAttachment(file)))
+
   const parts: UserContent = []
   if (text) {
     parts.push({ type: "text", text })
   }
 
-  for (const file of files) {
+  for (const file of prepared) {
     const bytes = new Uint8Array(await file.arrayBuffer())
     parts.push(
       createDataUrlFilePart({

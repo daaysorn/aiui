@@ -87,8 +87,7 @@ type LocalSentMedia = {
 }
 
 /** Eve optimistic turns collapse files to `[file: name]` text — strip those. */
-function displayUserBubbleText(content: string, hasLocalMedia: boolean) {
-  if (!hasLocalMedia) return content
+function displayUserBubbleText(content: string) {
   return content
     .replace(/\[file(?::[^\]]*)?\]/gi, "")
     .replace(/\n{2,}/g, "\n")
@@ -259,13 +258,8 @@ function OverviewChatPanelInner({
     })
   }, [messages, sentMedia.length])
 
-  useEffect(() => {
-    setSentMedia((prev) => {
-      for (const item of prev) URL.revokeObjectURL(item.previewUrl)
-      return []
-    })
-  }, [threadId])
-
+  // Do NOT clear sentMedia on threadId change — creating a chat navigates
+  // /dashboard → /dashboard/chat/:id and that was wiping image previews.
   useEffect(() => {
     registerTrackFailure(() => {
       toast.error("Message sent but usage was not recorded.")
@@ -620,17 +614,19 @@ function ChatMessageRow({
   onSaveEdit: (message: EveMessage, text: string) => void
 }) {
   const rawContent = eveMessageText(message)
-  const fileParts = message.parts.filter((part) => part.type === "file")
+  const fileParts = message.parts.filter(
+    (part) => part.type === "file" && Boolean(part.url)
+  )
   const mediaItems =
     fileParts.length > 0
       ? fileParts.map((part, index) => ({
           id: `${message.id}-file-${index}`,
           mediaType: part.mediaType,
           filename: part.filename ?? "Attachment",
-          previewUrl: part.url ?? "",
+          previewUrl: part.url!,
         }))
       : localMedia
-  const content = displayUserBubbleText(rawContent, mediaItems.length > 0)
+  const content = displayUserBubbleText(rawContent)
   const [draft, setDraft] = useState(content)
   const isLatestAssistant =
     message.role === "assistant" && message.id === lastAssistant?.id
