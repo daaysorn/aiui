@@ -118,6 +118,21 @@ async function main() {
     })
   })
 
+  const concurrency = Math.max(
+    1,
+    Number.parseInt(
+      process.env.WORKFLOW_POSTGRES_WORKER_CONCURRENCY?.trim() || "50",
+      10
+    ) || 50
+  )
+  const maxPoolSize = Math.max(
+    concurrency + 2,
+    Number.parseInt(
+      process.env.WORKFLOW_POSTGRES_MAX_POOL_SIZE?.trim() || "0",
+      10
+    ) || concurrency + 2
+  )
+
   console.error(`[start-with-eve] starting Eve on 127.0.0.1:${evePort}`)
   spawnChild(process.execPath, [eveEntry], {
     HOST: "127.0.0.1",
@@ -126,6 +141,8 @@ async function main() {
     PORT: String(evePort),
     WORKFLOW_POSTGRES_URL: workflowUrl,
     WORKFLOW_TARGET_WORLD: "@workflow/world-postgres",
+    WORKFLOW_POSTGRES_WORKER_CONCURRENCY: String(concurrency),
+    WORKFLOW_POSTGRES_MAX_POOL_SIZE: String(maxPoolSize),
   })
 
   await waitForEveHealth(evePort)

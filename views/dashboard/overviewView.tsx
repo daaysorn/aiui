@@ -72,6 +72,59 @@ function isSearchQuery(text: string) {
   return /\b(search|look up|google|find online|web search)\b/i.test(text)
 }
 
+function mediaTypesFromMessage(message: EveMessage | undefined): string[] {
+  if (!message) return []
+  return message.parts
+    .filter((part) => part.type === "file")
+    .map((part) => part.mediaType)
+}
+
+type LocalSentMedia = {
+  id: string
+  mediaType: string
+  filename: string
+  previewUrl: string
+}
+
+/** Eve optimistic turns collapse files to `[file: name]` text — strip those. */
+function displayUserBubbleText(content: string, hasLocalMedia: boolean) {
+  if (!hasLocalMedia) return content
+  return content
+    .replace(/\[file(?::[^\]]*)?\]/gi, "")
+    .replace(/\n{2,}/g, "\n")
+    .trim()
+}
+
+/** Wait-row copy: never "Thinking" — name the action. */
+function awaitingReplyLabel(input: {
+  searching: boolean
+  mediaTypes: string[]
+}): string {
+  if (input.searching) return "Searching the web…"
+  const types = input.mediaTypes
+  if (types.some((type) => type.startsWith("image/"))) {
+    return "Analyzing image…"
+  }
+  if (types.some((type) => type.startsWith("audio/"))) {
+    return "Listening…"
+  }
+  if (types.some((type) => type.startsWith("video/"))) {
+    return "Watching video…"
+  }
+  if (
+    types.some(
+      (type) =>
+        type === "application/pdf" ||
+        type.includes("pdf") ||
+        type.includes("document")
+    )
+  ) {
+    return "Reading document…"
+  }
+  if (types.length > 0) return "Inspecting file…"
+  return "Crafting a reply…"
+}
+
 function resolveSendToast(reason: "credits" | "busy" | "too_large") {
   if (reason === "credits") {
     toast.error("You're out of credits")
@@ -154,6 +207,8 @@ function OverviewChatPanelInner({
 
   const [input, setInput] = useState("")
   const [attachments, setAttachments] = useState<ComposerFile[]>([])
+  /** Eve optimistic messages drop file parts — keep previews until the turn ends. */
+  const [sentMedia, setSentMedia] = useState<LocalSentMedia[]>([])
   const [copied, setCopied] = useState<string | null>(null)
   const [liked, setLiked] = useState<Record<string, "up" | "down" | null>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -188,6 +243,28 @@ function OverviewChatPanelInner({
 
     return () => window.clearTimeout(timeoutId)
   }, [isBusy])
+
+  useEffect(() => {
+    if (sentMedia.length === 0) return
+    const latestUser = [...messages]
+      .reverse()
+      .find((message) => message.role === "user")
+    const hasRemoteFiles = (latestUser?.parts ?? []).some(
+      (part) => part.type === "file" && Boolean(part.url)
+    )
+    if (!hasRemoteFiles) return
+    setSentMedia((prev) => {
+      for (const item of prev) URL.revokeObjectURL(item.previewUrl)
+      return []
+    })
+  }, [messages, sentMedia.length])
+
+  useEffect(() => {
+    setSentMedia((prev) => {
+      for (const item of prev) URL.revokeObjectURL(item.previewUrl)
+      return []
+    })
+  }, [threadId])
 
   useEffect(() => {
     registerTrackFailure(() => {
@@ -272,18 +349,26 @@ function OverviewChatPanelInner({
 
   async function sendChat(text: string) {
     const trimmed = text.trim()
-    const files = attachments.map((item) => item.file)
+    const pending = attachments
+    const files = pending.map((item) => item.file)
     if ((!trimmed && files.length === 0) || isBusy || isAwaitingReply) return
 
-    const pending = attachments
-    // Clear composer immediately; restore only if send fails to start.
+    const mediaSnapshot: LocalSentMedia[] = pending.map((item) => ({
+      id: item.id,
+      mediaType: item.file.type || "application/octet-stream",
+      filename: item.file.name,
+      previewUrl: item.previewUrl || URL.createObjectURL(item.file),
+    }))
+
+    // Clear composer immediately; keep local previews until Eve echoes file URLs.
     setInput("")
     setAttachments([])
-    for (const item of pending) {
-      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
-    }
+    setSentMedia((prev) => {
+      for (const item of prev) URL.revokeObjectURL(item.previewUrl)
+      return mediaSnapshot
+    })
 
-    // Show thinking before Eve appends the user message (follow-ups).
+    // Show wait UI before Eve appends the user message (follow-ups).
     userCountBeforeSendRef.current = messages.reduce(
       (count, message) => (message.role === "user" ? count + 1 : count),
       0
@@ -294,6 +379,13 @@ function OverviewChatPanelInner({
     if (!result.ok) {
       setIsAwaitingReply(false)
       setInput(trimmed)
+      setAttachments(
+        pending.map((item, index) => ({
+          ...item,
+          previewUrl: mediaSnapshot[index]?.previewUrl ?? item.previewUrl,
+        }))
+      )
+      setSentMedia([])
       if (result.reason !== "empty") {
         resolveSendToast(result.reason)
       }
@@ -321,6 +413,10 @@ function OverviewChatPanelInner({
     .reverse()
     .find((message) => message.role === "assistant")
   const lastUserText = lastUser ? eveMessageText(lastUser) : ""
+  const lastUserMediaTypes = [
+    ...mediaTypesFromMessage(lastUser),
+    ...sentMedia.map((item) => item.mediaType),
+  ]
   const lastMessage = messages[messages.length - 1]
   const userCount = messages.reduce(
     (count, message) => (message.role === "user" ? count + 1 : count),
@@ -336,8 +432,12 @@ function OverviewChatPanelInner({
     }
     return Boolean(eveMessageText(lastMessage))
   })()
-  const showThinking =
+  const showAwaiting =
     (isBusy || isAwaitingReply) && !replyForCurrentTurnStarted
+  const awaitingLabel = awaitingReplyLabel({
+    searching: isSearchQuery(lastUserText || input),
+    mediaTypes: lastUserMediaTypes,
+  })
 
   const chatMood: ChatEmojiMood = isBusy || isAwaitingReply
     ? isSearchQuery(lastUserText || input)
@@ -420,6 +520,12 @@ function OverviewChatPanelInner({
                             key={message.id}
                             message={message}
                             lastAssistant={lastAssistant}
+                            localMedia={
+                              message.role === "user" &&
+                              message.id === lastUser?.id
+                                ? sentMedia
+                                : []
+                            }
                             isBusy={isBusy || isAwaitingReply}
                             isEditing={editingId === message.id}
                             showReplyEmoji={showReplyEmoji}
@@ -436,16 +542,14 @@ function OverviewChatPanelInner({
                         )
                       })}
 
-                      {showThinking ? (
+                      {showAwaiting ? (
                         <MessageScrollerItem messageId="__streaming__">
                           <Message align="start">
                             <MessageContent>
                               <Bubble variant="ghost" align="start">
                                 <BubbleContent className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                   <ChatEmoji mood={chatMood} className="size-6 shrink-0" />
-                                  <Shimmer as="span">
-                                    {chatMood === "searching" ? "Searching…" : "Thinking…"}
-                                  </Shimmer>
+                                  <Shimmer as="span">{awaitingLabel}</Shimmer>
                                 </BubbleContent>
                               </Bubble>
                             </MessageContent>
@@ -485,6 +589,7 @@ function OverviewChatPanelInner({
 function ChatMessageRow({
   message,
   lastAssistant,
+  localMedia,
   isBusy,
   isEditing,
   showReplyEmoji,
@@ -500,6 +605,7 @@ function ChatMessageRow({
 }: {
   message: EveMessage
   lastAssistant: EveMessage | undefined
+  localMedia: LocalSentMedia[]
   isBusy: boolean
   isEditing: boolean
   showReplyEmoji: boolean
@@ -513,9 +619,19 @@ function ChatMessageRow({
   onCancelEdit: () => void
   onSaveEdit: (message: EveMessage, text: string) => void
 }) {
-  const content = eveMessageText(message)
-  const [draft, setDraft] = useState(content)
+  const rawContent = eveMessageText(message)
   const fileParts = message.parts.filter((part) => part.type === "file")
+  const mediaItems =
+    fileParts.length > 0
+      ? fileParts.map((part, index) => ({
+          id: `${message.id}-file-${index}`,
+          mediaType: part.mediaType,
+          filename: part.filename ?? "Attachment",
+          previewUrl: part.url ?? "",
+        }))
+      : localMedia
+  const content = displayUserBubbleText(rawContent, mediaItems.length > 0)
+  const [draft, setDraft] = useState(content)
   const isLatestAssistant =
     message.role === "assistant" && message.id === lastAssistant?.id
   // Copy / like / regen only after the turn finishes.
@@ -546,28 +662,48 @@ function ChatMessageRow({
     >
       {message.role === "user" ? (
         <Message align="end">
-          <MessageContent>
-            {fileParts.length > 0 ? (
-              <div className="mb-2 flex flex-wrap justify-end gap-2">
-                {fileParts.map((part, index) => {
-                  const isImage = part.mediaType.startsWith("image/")
-                  if (isImage && part.url) {
+          <MessageContent className="items-end gap-2">
+            {mediaItems.length > 0 ? (
+              <div className="flex max-w-[min(100%,11rem)] flex-col items-end gap-1.5 sm:max-w-[13rem]">
+                {mediaItems.map((item) => {
+                  const isImage = item.mediaType.startsWith("image/")
+                  if (isImage && item.previewUrl) {
                     return (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        key={`${message.id}-file-${index}`}
-                        src={part.url}
-                        alt={part.filename ?? "Attachment"}
-                        className="max-h-48 max-w-[min(100%,16rem)] rounded-xl object-cover"
+                        key={item.id}
+                        src={item.previewUrl}
+                        alt={item.filename}
+                        className="max-h-40 w-auto max-w-full rounded-2xl object-contain"
+                      />
+                    )
+                  }
+                  if (item.mediaType.startsWith("video/") && item.previewUrl) {
+                    return (
+                      <video
+                        key={item.id}
+                        src={item.previewUrl}
+                        controls
+                        className="max-h-40 w-auto max-w-full rounded-2xl bg-muted object-contain"
+                      />
+                    )
+                  }
+                  if (item.mediaType.startsWith("audio/") && item.previewUrl) {
+                    return (
+                      <audio
+                        key={item.id}
+                        src={item.previewUrl}
+                        controls
+                        className="w-full max-w-[min(100%,13rem)]"
                       />
                     )
                   }
                   return (
                     <span
-                      key={`${message.id}-file-${index}`}
-                      className="rounded-xl bg-secondary px-3 py-2 text-xs text-secondary-foreground"
+                      key={item.id}
+                      className="rounded-2xl bg-secondary px-3 py-2 text-xs text-secondary-foreground"
                     >
-                      {part.filename ?? part.mediaType}
+                      {item.filename || item.mediaType}
                     </span>
                   )
                 })}
