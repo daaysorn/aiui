@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   BuildingsIcon,
+  ChatIcon,
   DotsThreeIcon,
   DotsThreeVerticalIcon,
   FolderOpenIcon,
@@ -20,6 +21,10 @@ import {
 } from "@phosphor-icons/react"
 import { toast } from "sonner"
 
+import {
+  ChatSearchCommand,
+  useChatSearchOpen,
+} from "@/components/dashboard/chat-search-command"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -66,8 +71,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 const primaryNav = [
-  { href: "/dashboard", label: "New bot", icon: PencilSimpleIcon, exact: true },
-  { href: "/dashboard/search", label: "Search chat", icon: MagnifyingGlassIcon, exact: true },
   { href: "/dashboard/plugins", label: "Plugins", icon: PuzzlePieceIcon, exact: true },
   { href: "/dashboard/mcps", label: "MCPs", icon: PlugsIcon, exact: true },
 ] as const
@@ -156,6 +159,7 @@ function DashboardSidebar() {
   const [chatToEdit, setChatToEdit] = useState<RecentChat | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [clearAllOpen, setClearAllOpen] = useState(false)
+  const { open: searchOpen, setOpen: setSearchOpen } = useChatSearchOpen()
 
   const organisations = overview?.organizations ?? []
   const hasOrganisations = organisations.length > 0
@@ -301,6 +305,24 @@ function DashboardSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <NavButton
+                href="/dashboard"
+                label="New chat"
+                icon={ChatIcon}
+                isActive={pathname === "/dashboard"}
+              />
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <MagnifyingGlassIcon weight="duotone" />
+                  <span>Search chats</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    ⌘K
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {primaryNav.map((item) => (
                 <NavButton
                   key={item.href}
@@ -585,6 +607,8 @@ function DashboardSidebar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ChatSearchCommand open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   )
 }

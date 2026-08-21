@@ -13,7 +13,7 @@ export function DashboardSkeleton() {
   )
 }
 
-/** Placeholder that matches the New bot chat window while a thread hydrates. */
+/** Placeholder that matches the New chat window while a thread hydrates. */
 export function ChatWindowSkeleton() {
   return (
     <div

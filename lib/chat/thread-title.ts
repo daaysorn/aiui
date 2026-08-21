@@ -117,6 +117,9 @@ export function recentChatHref(chat: {
 /** Client-only: clear active dashboard thread without a Next soft navigation. */
 export const DASHBOARD_NEW_CHAT_EVENT = "daaybot:dashboard-new-chat"
 
+/** Client-only: open the chat search command palette. */
+export const DASHBOARD_SEARCH_CHATS_EVENT = "daaybot:dashboard-search-chats"
+
 export function workspaceChatPath(threadId: string): string {
   return `/dashboard/chat/${threadId}`
 }
