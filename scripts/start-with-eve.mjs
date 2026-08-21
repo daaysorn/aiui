@@ -132,8 +132,13 @@ async function main() {
       10
     ) || concurrency + 2
   )
+  // Production default differs from local `daaybot_dev` so shared DBs do not steal jobs.
+  const jobPrefix =
+    process.env.WORKFLOW_POSTGRES_JOB_PREFIX?.trim() || "daaybot"
 
-  console.error(`[start-with-eve] starting Eve on 127.0.0.1:${evePort}`)
+  console.error(
+    `[start-with-eve] starting Eve on 127.0.0.1:${evePort} (prefix=${jobPrefix}, concurrency=${concurrency}, pool=${maxPoolSize})`
+  )
   spawnChild(process.execPath, [eveEntry], {
     HOST: "127.0.0.1",
     NITRO_HOST: "127.0.0.1",
@@ -141,6 +146,7 @@ async function main() {
     PORT: String(evePort),
     WORKFLOW_POSTGRES_URL: workflowUrl,
     WORKFLOW_TARGET_WORLD: "@workflow/world-postgres",
+    WORKFLOW_POSTGRES_JOB_PREFIX: jobPrefix,
     WORKFLOW_POSTGRES_WORKER_CONCURRENCY: String(concurrency),
     WORKFLOW_POSTGRES_MAX_POOL_SIZE: String(maxPoolSize),
   })
