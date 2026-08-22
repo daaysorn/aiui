@@ -60,6 +60,8 @@ export function useRecentChats() {
   return useQuery({
     queryKey: queryKeys.recentChats,
     queryFn: fetchRecentChats,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   })
 }
 

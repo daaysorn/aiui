@@ -869,7 +869,7 @@ export function OverviewView({
   showSuggestions?: boolean
 }) {
   const router = useRouter()
-  const { data: overview } = useUserOverview()
+  const { data: overview, isPending: overviewPending } = useUserOverview()
   const [sessionEpoch, setSessionEpoch] = useState(0)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(urlThreadId)
   // Expect this path thread next (string = create, null = leave). undefined = normal sync.
@@ -888,6 +888,16 @@ export function OverviewView({
 
       // Local create: wait until `/dashboard/chat/:id` lands.
       if (pendingUrlThreadRef.current && !urlThreadId) {
+        return
+      }
+
+      // Local create while URL still shows a different thread (stale path).
+      // Do NOT adopt that URL — it remounts the panel and kills the live agent.
+      if (
+        pendingUrlThreadRef.current &&
+        urlThreadId &&
+        urlThreadId !== pendingUrlThreadRef.current
+      ) {
         return
       }
 
@@ -919,16 +929,23 @@ export function OverviewView({
       ignoredStaleThreadRef.current = urlThreadIdRef.current
       setActiveThreadId(null)
       setSessionEpoch((value) => value + 1)
+      if (urlThreadIdRef.current) {
+        router.replace("/dashboard", { scroll: false })
+      }
     }
 
     window.addEventListener(DASHBOARD_NEW_CHAT_EVENT, onNewChat)
     return () => {
       window.removeEventListener(DASHBOARD_NEW_CHAT_EVENT, onNewChat)
     }
-  }, [])
+  }, [router])
 
-  if (!overview) {
+  // Only block first load — do not unmount the live agent on background refetch.
+  if (overviewPending && !overview) {
     return <DashboardSkeleton />
+  }
+  if (!overview) {
+    return null
   }
 
   const firstName = overview.user.name.split(" ")[0] ?? ""

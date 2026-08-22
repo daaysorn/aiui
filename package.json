@@ -9,6 +9,9 @@
     "start": "node scripts/start-with-eve.mjs",
     "start:next": "next start",
     "workflow:setup": "node scripts/workflow-setup.mjs",
+    "workflow:db:up": "docker compose -f docker-compose.workflow.yml up -d",
+    "workflow:db:down": "docker compose -f docker-compose.workflow.yml down",
+    "workflow:db:logs": "docker compose -f docker-compose.workflow.yml logs -f workflow-postgres",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"

@@ -77,11 +77,12 @@ export function useBillingGate() {
         throw new Error(result.error)
       }
 
-      await refetch()
-      await Promise.all([
+      // Refresh billing UI in the background — do not block the chat turn.
+      void Promise.all([
+        refetch(),
         queryClient.invalidateQueries({ queryKey: queryKeys.overview }),
         queryClient.invalidateQueries({
-          queryKey: ["credit-transactions"],
+          queryKey: queryKeys.creditTransactions(),
         }),
       ])
     },

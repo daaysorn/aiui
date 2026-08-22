@@ -305,12 +305,19 @@ function DashboardSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <NavButton
-                href="/dashboard"
-                label="New chat"
-                icon={ChatIcon}
-                isActive={pathname === "/dashboard"}
-              />
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  type="button"
+                  isActive={pathname === "/dashboard"}
+                  onClick={() => {
+                    window.dispatchEvent(new Event(DASHBOARD_NEW_CHAT_EVENT))
+                    router.replace("/dashboard", { scroll: false })
+                  }}
+                >
+                  <ChatIcon weight={pathname === "/dashboard" ? "fill" : "duotone"} />
+                  <span>New chat</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   type="button"

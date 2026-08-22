@@ -1,0 +1,25 @@
+# Local Eve workflow Postgres — keeps durable chat off remote Neon RTT in dev.
+# Usage:
+#   bun run workflow:db:up
+#   bun run workflow:setup
+# Point WORKFLOW_POSTGRES_URL in .env.local at the URL below, then restart bun dev.
+services:
+  workflow-postgres:
+    image: postgres:16-alpine
+    container_name: daaybot-workflow-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: eve
+      POSTGRES_PASSWORD: eve
+      POSTGRES_DB: eve_workflow
+    volumes:
+      - daaybot_workflow_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eve -d eve_workflow"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  daaybot_workflow_pg:

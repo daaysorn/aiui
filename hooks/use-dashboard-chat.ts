@@ -21,9 +21,22 @@ import { hydrateEveSession } from "@/lib/chat/eve-session-hydrate"
 import { prepareChatAttachment } from "@/lib/chat/prepare-attachment"
 import { summarizeThreadTitle } from "@/lib/chat/summarize-thread-title"
 import { threadTitleFromMessage } from "@/lib/chat/thread-title"
-import { queryKeys } from "@/lib/query/keys"
+import {
+  patchRecentChatTitle,
+  upsertWorkspaceRecentChat,
+} from "@/lib/query/recent-chats-cache"
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+
+/** Threads created in this tab — skip remount hydrate that would kill the live agent. */
+const liveCreatedThreadIds = new Set<string>()
+
+function markLiveCreatedThread(threadId: string) {
+  liveCreatedThreadIds.add(threadId)
+  window.setTimeout(() => {
+    liveCreatedThreadIds.delete(threadId)
+  }, 60_000)
+}
 
 export function eveMessageText(message: Pick<EveMessage, "parts">): string {
   return message.parts
@@ -45,8 +58,15 @@ export function useDashboardChatBootstrap({
   userId,
   threadId,
 }: UseDashboardChatBootstrapInput) {
-  const [initial, setInitial] = useState<SavedDashboardChat>({})
-  const [ready, setReady] = useState(!threadId)
+  const [initial, setInitial] = useState<SavedDashboardChat>(() => {
+    if (!threadId || !userId) return {}
+    return loadDashboardChat(userId, threadId)
+  })
+  const [ready, setReady] = useState(() => {
+    if (!threadId || !userId) return true
+    const cached = loadDashboardChat(userId, threadId)
+    return Boolean(cached.events?.length)
+  })
   const previousThreadRef = useRef<string | null | undefined>(undefined)
 
   useEffect(() => {
@@ -66,6 +86,12 @@ export function useDashboardChatBootstrap({
       return
     }
 
+    // Thread was just created in this tab (URL race remount) — do not hydrate-skel.
+    if (liveCreatedThreadIds.has(threadId)) {
+      setReady(true)
+      return
+    }
+
     if (previous === threadId) {
       return
     }
@@ -73,7 +99,6 @@ export function useDashboardChatBootstrap({
     let cancelled = false
 
     async function load() {
-      setReady(false)
       const cached = loadDashboardChat(userId!, threadId!)
       if (cached.events?.length) {
         if (!cancelled) {
@@ -83,11 +108,19 @@ export function useDashboardChatBootstrap({
         return
       }
 
+      // Only show the chat skeleton when we truly have nothing to render.
+      if (!cancelled) {
+        setInitial({})
+        setReady(false)
+      }
+
       try {
         const { fetchWorkspaceThread } = await import("@/lib/api/dashboard-data")
         const thread = await fetchWorkspaceThread(threadId!)
         if (thread?.eveSessionId) {
-          const snapshot = await hydrateEveSession(thread.eveSessionId)
+          const snapshot = await hydrateEveSession(thread.eveSessionId, {
+            timeoutMs: 8_000,
+          })
           if (!cancelled) {
             const payload = {
               events: snapshot.events,
@@ -210,15 +243,10 @@ export function useDashboardChat({
 
           const sessionId = snapshot.session?.sessionId
           if (sessionId) {
+            // Persist session id only — Recents list does not need a refetch.
             void updateWorkspaceThread(activeThreadId, {
               eveSessionId: sessionId,
-            })
-              .then(() =>
-                queryClient.invalidateQueries({
-                  queryKey: queryKeys.recentChats,
-                })
-              )
-              .catch(() => {})
+            }).catch(() => {})
           }
         }
 
@@ -238,13 +266,14 @@ export function useDashboardChat({
               ) {
                 return
               }
+              patchRecentChatTitle(queryClient, {
+                id: pendingTitle.threadId,
+                scope: "workspace",
+                title,
+              })
               return updateWorkspaceThread(pendingTitle.threadId, {
                 title,
-              }).then(() =>
-                queryClient.invalidateQueries({
-                  queryKey: queryKeys.recentChats,
-                })
-              )
+              }).catch(() => {})
             })
             .catch(() => {})
         }
@@ -286,8 +315,9 @@ export function useDashboardChat({
             threadId: thread.id,
             source: titleSource || "New chat",
           }
+          markLiveCreatedThread(thread.id)
           onThreadCreated?.(thread.id)
-          void queryClient.invalidateQueries({ queryKey: queryKeys.recentChats })
+          upsertWorkspaceRecentChat(queryClient, thread)
           return thread.id
         })
         .finally(() => {
