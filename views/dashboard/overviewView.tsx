@@ -11,7 +11,7 @@ import {
   ThumbsUpIcon,
   XIcon,
 } from "@phosphor-icons/react"
-import type { EveMessage } from "eve/react"
+import type { EveMessage, EveMessagePart } from "eve/react"
 import { toast } from "sonner"
 
 import {
@@ -72,11 +72,15 @@ function isSearchQuery(text: string) {
   return /\b(search|look up|google|find online|web search)\b/i.test(text)
 }
 
+type EveFilePart = Extract<EveMessagePart, { type: "file" }>
+
+function isEveFilePart(part: EveMessagePart): part is EveFilePart {
+  return part.type === "file"
+}
+
 function mediaTypesFromMessage(message: EveMessage | undefined): string[] {
   if (!message) return []
-  return message.parts
-    .filter((part) => part.type === "file")
-    .map((part) => part.mediaType)
+  return message.parts.filter(isEveFilePart).map((part) => part.mediaType)
 }
 
 type LocalSentMedia = {
@@ -615,7 +619,8 @@ function ChatMessageRow({
 }) {
   const rawContent = eveMessageText(message)
   const fileParts = message.parts.filter(
-    (part) => part.type === "file" && Boolean(part.url)
+    (part): part is EveFilePart & { url: string } =>
+      isEveFilePart(part) && Boolean(part.url)
   )
   const mediaItems =
     fileParts.length > 0
@@ -623,7 +628,7 @@ function ChatMessageRow({
           id: `${message.id}-file-${index}`,
           mediaType: part.mediaType,
           filename: part.filename ?? "Attachment",
-          previewUrl: part.url!,
+          previewUrl: part.url,
         }))
       : localMedia
   const content = displayUserBubbleText(rawContent)
